@@ -1,0 +1,42 @@
+{
+  // Prettier formata ao salvar
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  // ESLint roda depois, mas só para lint — não para formatação
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    // garante que o organizar imports (simple-import-sort) rode também
+    "source.organizeImports": "never"
+  },
+  // diz ao ESLint para não tentar formatar TypeScript —
+  // deixa essa responsabilidade inteiramente para o Prettier
+  "eslint.format.enable": false,
+  // força a extensão oficial do ESLint a usar flat config
+  "eslint.useFlatConfig": true,
+  "eslint.experimental.useFlatConfig": true,
+  // garante que o ESLint valide arquivos TypeScript
+  "eslint.validate": [
+    "javascript",
+    "typescript"
+  ],
+  // desliga os formatters embutidos do VS Code para JS/TS
+  "javascript.format.enable": false,
+  "typescript.format.enable": false,
+  // usa apenas o Prettier local do projeto
+  "prettier.requireConfig": true,
+  "prettier.prettierPath": "./node_modules/prettier",
+  // desliga o linter global incompatível com eslint.config.mjs
+  "linter.enabled": false
+}
