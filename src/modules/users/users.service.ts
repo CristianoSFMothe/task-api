@@ -12,7 +12,8 @@ import type { DrizzleClient } from '@/database/drizzle.client';
 import { users } from '@/database/schema';
 
 import type { CreateUserDto } from './dto/create-user.dto';
-import { createUserSchema } from './schemas/user.schema';
+import type { UpdateNameUserDto } from './dto/update-name-user.dto';
+import { createUserSchema, updateNameUserSchema } from './schemas/user.schema';
 
 type UserResponse = {
   id: string;
@@ -100,5 +101,24 @@ export class UsersService {
     }
 
     return user;
+  }
+
+  async updateName(id: string, dto: UpdateNameUserDto): Promise<UserResponse> {
+    const data = updateNameUserSchema.parse(dto);
+
+    const [updatedUser] = await this.db
+      .update(users)
+      .set({
+        name: data.name,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning(userPublicColumns);
+
+    if (!updatedUser) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    return updatedUser;
   }
 }

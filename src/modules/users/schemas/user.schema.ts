@@ -19,4 +19,9 @@ export const createUserSchema = z.object({
     .max(100, 'A senha deve ter no máximo 100 caracteres'),
 });
 
+export const updateNameUserSchema = createUserSchema.pick({
+  name: true,
+});
+
 export type CreateUserInput = z.infer<typeof createUserSchema>;
+export type UpdateNameUserInput = z.infer<typeof updateNameUserSchema>;
