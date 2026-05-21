@@ -84,4 +84,21 @@ export class UsersService {
 
     return user;
   }
+
+  async findByEmail(email: string): Promise<UserResponse> {
+    const user = await this.db.query.users.findFirst({
+      columns: {
+        id: true,
+        name: true,
+        email: true,
+      },
+      where: eq(users.email, email),
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    return user;
+  }
 }

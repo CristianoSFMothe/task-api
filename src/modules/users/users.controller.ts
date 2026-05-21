@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 
 import { CreateUserDto } from './dto/create-user.dto';
+import { FindUserByEmailDto } from './dto/find-user-by-email.dto';
 import { UsersService } from './users.service';
 
 @Controller('users')
@@ -17,6 +18,11 @@ export class UsersController {
   @Get()
   findAll() {
     return this.usersService.findAll();
+  }
+
+  @Post('find-by-email')
+  findByEmail(@Body() query: FindUserByEmailDto) {
+    return this.usersService.findByEmail(query.email);
   }
 
   @Get(':id')
