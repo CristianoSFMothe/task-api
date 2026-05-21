@@ -41,6 +41,11 @@ export class UsersController {
     return this.usersService.updateName(id, updateNameUserDto);
   }
 
+  @Patch(':id/status')
+  updateStatus(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.usersService.updateStatus(id);
+  }
+
   @Delete(':id')
   delete(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.usersService.delete(id);

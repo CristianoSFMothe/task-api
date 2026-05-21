@@ -17,6 +17,7 @@ import {
   createUserSchema,
   deleteUserSchema,
   updateNameUserSchema,
+  userStatusSchema,
 } from './schemas/user.schema';
 
 type UserResponse = {
@@ -26,6 +27,11 @@ type UserResponse = {
 };
 
 type DeleteUserResponse = {
+  id: string;
+  message: string;
+};
+
+type UpdateUserStatusResponse = {
   id: string;
   message: string;
 };
@@ -88,15 +94,7 @@ export class UsersService {
   }
 
   async findById(id: string): Promise<UserResponse> {
-    const user = await this.db.query.users.findFirst({
-      columns: {
-        id: true,
-        name: true,
-        email: true,
-        status: true,
-      },
-      where: eq(users.id, id),
-    });
+    const user = await this.findUserByIdWithStatus(id);
 
     if (!user || user.status === 'INACTIVE') {
       throw new NotFoundException('Usuário não encontrado');
@@ -167,11 +165,66 @@ export class UsersService {
     };
   }
 
+  async updateStatus(id: string): Promise<UpdateUserStatusResponse> {
+    try {
+      const user = await this.findById(id);
+
+      return {
+        id: user.id,
+        message: 'Usuário já está ativo',
+      };
+    } catch (error) {
+      if (!(error instanceof NotFoundException)) {
+        throw error;
+      }
+    }
+
+    const user = await this.findUserByIdWithStatus(id);
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    const status = userStatusSchema.parse('ACTIVE');
+
+    const [updatedUser] = await this.db
+      .update(users)
+      .set({
+        status,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning(userDeleteColumns);
+
+    if (!updatedUser) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    return {
+      id: updatedUser.id,
+      message: 'Status do usuário atualizado com sucesso',
+    };
+  }
+
   private toUserResponse(user: UserWithStatus): UserResponse {
     return {
       id: user.id,
       name: user.name,
       email: user.email,
     };
+  }
+
+  private findUserByIdWithStatus(
+    id: string,
+  ): Promise<UserWithStatus | undefined> {
+    return this.db.query.users.findFirst({
+      columns: {
+        id: true,
+        name: true,
+        email: true,
+        status: true,
+      },
+      where: eq(users.id, id),
+    });
   }
 }
