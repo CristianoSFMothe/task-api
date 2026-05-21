@@ -1,4 +1,9 @@
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 
@@ -13,6 +18,12 @@ type UserResponse = {
   id: string;
   name: string;
   email: string;
+};
+
+const userPublicColumns = {
+  id: users.id,
+  name: users.name,
+  email: users.email,
 };
 
 @Injectable()
@@ -42,12 +53,35 @@ export class UsersService {
         email: data.email,
         password: hashedPassword,
       })
-      .returning({
-        id: users.id,
-        name: users.name,
-        email: users.email,
-      });
+      .returning(userPublicColumns);
 
     return newUser;
+  }
+
+  async findAll(): Promise<UserResponse[]> {
+    return this.db.query.users.findMany({
+      columns: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    });
+  }
+
+  async findById(id: string): Promise<UserResponse> {
+    const user = await this.db.query.users.findFirst({
+      columns: {
+        id: true,
+        name: true,
+        email: true,
+      },
+      where: eq(users.id, id),
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    return user;
   }
 }
