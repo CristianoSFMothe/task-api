@@ -13,7 +13,11 @@ import { users } from '@/database/schema';
 
 import type { CreateUserDto } from './dto/create-user.dto';
 import type { UpdateNameUserDto } from './dto/update-name-user.dto';
-import { createUserSchema, updateNameUserSchema } from './schemas/user.schema';
+import {
+  createUserSchema,
+  deleteUserSchema,
+  updateNameUserSchema,
+} from './schemas/user.schema';
 
 type UserResponse = {
   id: string;
@@ -21,10 +25,23 @@ type UserResponse = {
   email: string;
 };
 
+type DeleteUserResponse = {
+  id: string;
+  message: string;
+};
+
+type UserWithStatus = UserResponse & {
+  status: 'ACTIVE' | 'INACTIVE';
+};
+
 const userPublicColumns = {
   id: users.id,
   name: users.name,
   email: users.email,
+};
+
+const userDeleteColumns = {
+  id: users.id,
 };
 
 @Injectable()
@@ -66,6 +83,7 @@ export class UsersService {
         name: true,
         email: true,
       },
+      where: eq(users.status, 'ACTIVE'),
     });
   }
 
@@ -75,15 +93,16 @@ export class UsersService {
         id: true,
         name: true,
         email: true,
+        status: true,
       },
       where: eq(users.id, id),
     });
 
-    if (!user) {
+    if (!user || user.status === 'INACTIVE') {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    return user;
+    return this.toUserResponse(user);
   }
 
   async findByEmail(email: string): Promise<UserResponse> {
@@ -120,5 +139,39 @@ export class UsersService {
     }
 
     return updatedUser;
+  }
+
+  async delete(id: string): Promise<DeleteUserResponse> {
+    await this.findById(id);
+
+    const data = deleteUserSchema.parse({
+      status: 'INACTIVE',
+    });
+
+    const [deletedUser] = await this.db
+      .update(users)
+      .set({
+        status: data.status,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning(userDeleteColumns);
+
+    if (!deletedUser) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    return {
+      id: deletedUser.id,
+      message: 'Usuário deletado com sucesso',
+    };
+  }
+
+  private toUserResponse(user: UserWithStatus): UserResponse {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    };
   }
 }

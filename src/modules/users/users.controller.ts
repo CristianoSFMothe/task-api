@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -38,6 +39,11 @@ export class UsersController {
     @Body() updateNameUserDto: UpdateNameUserDto,
   ) {
     return this.usersService.updateName(id, updateNameUserDto);
+  }
+
+  @Delete(':id')
+  delete(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.usersService.delete(id);
   }
 
   @Post()

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export const userStatusSchema = z.enum(['ACTIVE', 'INACTIVE']);
+
 export const createUserSchema = z.object({
   name: z
     .string({ message: 'O nome é obrigatório' })
@@ -23,5 +25,11 @@ export const updateNameUserSchema = createUserSchema.pick({
   name: true,
 });
 
+export const deleteUserSchema = z.object({
+  status: userStatusSchema,
+});
+
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateNameUserInput = z.infer<typeof updateNameUserSchema>;
+export type UserStatusInput = z.infer<typeof userStatusSchema>;
+export type DeleteUserInput = z.infer<typeof deleteUserSchema>;
