@@ -26,6 +26,8 @@
       "@/*": [
         "./src/*"
       ]
-    }
+    },
+    "types": ["node", "jest"]
   },
+  "include": ["src/**/*.ts", "test/**/*.ts", "drizzle.config.ts"]
 }
