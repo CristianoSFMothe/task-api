@@ -1,2 +1,2 @@
-export * from './tasks.schema.js';
-export * from './users.schema.js';
+export * from './tasks.schema';
+export * from './users.schema';

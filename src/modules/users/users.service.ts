@@ -36,6 +36,17 @@ type UpdateUserStatusResponse = {
   message: string;
 };
 
+type FindByEmailOptions = {
+  includePassword?: boolean;
+};
+
+export type UserAuthResponse = {
+  id: string;
+  email: string;
+  password: string;
+  status: 'ACTIVE' | 'INACTIVE';
+};
+
 type UserWithStatus = UserResponse & {
   status: 'ACTIVE' | 'INACTIVE';
 };
@@ -103,21 +114,51 @@ export class UsersService {
     return this.toUserResponse(user);
   }
 
-  async findByEmail(email: string): Promise<UserResponse> {
+  async findByEmail(
+    email: string,
+    options: { includePassword: true },
+  ): Promise<UserAuthResponse>;
+  async findByEmail(
+    email: string,
+    options?: FindByEmailOptions,
+  ): Promise<UserResponse>;
+  async findByEmail(
+    email: string,
+    options?: FindByEmailOptions,
+  ): Promise<UserResponse | UserAuthResponse> {
+    if (options?.includePassword) {
+      const user = await this.db.query.users.findFirst({
+        columns: {
+          id: true,
+          email: true,
+          password: true,
+          status: true,
+        },
+        where: eq(users.email, email),
+      });
+
+      if (!user || user.status === 'INACTIVE') {
+        throw new NotFoundException('Usuário não encontrado');
+      }
+
+      return user;
+    }
+
     const user = await this.db.query.users.findFirst({
       columns: {
         id: true,
         name: true,
         email: true,
+        status: true,
       },
       where: eq(users.email, email),
     });
 
-    if (!user) {
+    if (!user || user.status === 'INACTIVE') {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    return user;
+    return this.toUserResponse(user);
   }
 
   async updateName(id: string, dto: UpdateNameUserDto): Promise<UserResponse> {
