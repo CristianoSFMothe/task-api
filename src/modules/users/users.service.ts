@@ -38,16 +38,13 @@ type UpdateUserStatusResponse = {
   message: string;
 };
 
-type FindByEmailOptions = {
-  includePassword?: boolean;
-};
-
 type FindByIdOptions = {
   includeRole?: boolean;
 };
 
 export type UserAuthResponse = {
   id: string;
+  name: string;
   email: string;
   password: string;
   role: UserRole;
@@ -147,37 +144,7 @@ export class UsersService {
     return this.toUserResponse(user);
   }
 
-  async findByEmail(
-    email: string,
-    options: { includePassword: true },
-  ): Promise<UserAuthResponse>;
-  async findByEmail(
-    email: string,
-    options?: FindByEmailOptions,
-  ): Promise<UserResponse>;
-  async findByEmail(
-    email: string,
-    options?: FindByEmailOptions,
-  ): Promise<UserResponse | UserAuthResponse> {
-    if (options?.includePassword) {
-      const user = await this.db.query.users.findFirst({
-        columns: {
-          id: true,
-          email: true,
-          password: true,
-          role: true,
-          status: true,
-        },
-        where: eq(users.email, email),
-      });
-
-      if (!user || user.status === 'INACTIVE') {
-        throw new NotFoundException(messages.user.notFound);
-      }
-
-      return user;
-    }
-
+  async findByEmail(email: string): Promise<UserResponse> {
     const user = await this.db.query.users.findFirst({
       columns: {
         id: true,
@@ -193,6 +160,26 @@ export class UsersService {
     }
 
     return this.toUserResponse(user);
+  }
+
+  async findAuthUserByEmail(email: string): Promise<UserAuthResponse> {
+    const user = await this.db.query.users.findFirst({
+      columns: {
+        id: true,
+        name: true,
+        email: true,
+        password: true,
+        role: true,
+        status: true,
+      },
+      where: eq(users.email, email),
+    });
+
+    if (!user || user.status === 'INACTIVE') {
+      throw new NotFoundException(messages.user.notFound);
+    }
+
+    return user;
   }
 
   async updateName(id: string, dto: UpdateNameUserDto): Promise<UserResponse> {

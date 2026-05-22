@@ -1,0 +1,25 @@
+meta {
+  name: FindByEmail
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/users/find-by-email
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  content-type: application/json
+}
+
+body:json {
+  {
+    "email": "{{email}}"
+  }
+}

@@ -7,20 +7,13 @@ import {
 import { Reflector } from '@nestjs/core';
 
 import type { UserRole } from '@/database/schema/users.schema';
+import type {
+  AuthenticatedUser,
+  RequestWithUser,
+} from '@/modules/auth/types/authenticated-user';
 
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { ROLES_KEY } from '../decorators/roles.decorator';
-
-type AuthenticatedUser = {
-  sub: string;
-  email: string;
-  name: string;
-  role: UserRole;
-};
-
-type RequestWithUser = {
-  user?: AuthenticatedUser;
-};
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -45,7 +38,9 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<RequestWithUser>();
+    const request = context
+      .switchToHttp()
+      .getRequest<RequestWithUser & { user?: AuthenticatedUser }>();
     const user = request.user;
 
     if (!user) {

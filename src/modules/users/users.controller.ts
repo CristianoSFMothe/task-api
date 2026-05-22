@@ -7,10 +7,12 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Req,
 } from '@nestjs/common';
 
 import { Public } from '@/modules/auth/decorators/public.decorator';
 import { Roles } from '@/modules/auth/decorators/roles.decorator';
+import type { RequestWithUser } from '@/modules/auth/types/authenticated-user';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { FindUserByEmailDto } from './dto/find-user-by-email.dto';
@@ -32,17 +34,17 @@ export class UsersController {
     return this.usersService.findByEmail(query.email);
   }
 
-  @Get(':id')
-  findById(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.usersService.findById(id);
+  @Get('me')
+  findMe(@Req() request: RequestWithUser) {
+    return this.usersService.findById(request.user.userId);
   }
 
-  @Patch(':id')
-  updateName(
-    @Param('id', new ParseUUIDPipe()) id: string,
+  @Patch('me')
+  updateMyName(
+    @Req() request: RequestWithUser,
     @Body() updateNameUserDto: UpdateNameUserDto,
   ) {
-    return this.usersService.updateName(id, updateNameUserDto);
+    return this.usersService.updateName(request.user.userId, updateNameUserDto);
   }
 
   @Patch(':id/status')

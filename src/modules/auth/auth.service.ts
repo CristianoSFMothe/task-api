@@ -19,6 +19,13 @@ type JwtPayload = {
   role: UserAuthResponse['role'];
 };
 
+type LoginResponse = {
+  access_token: string;
+  userId: string;
+  name: string;
+  email: string;
+};
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -26,15 +33,13 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async login(createAuthDto: CreateAuthDto): Promise<{ access_token: string }> {
+  async login(createAuthDto: CreateAuthDto): Promise<LoginResponse> {
     const data = loginSchema.parse(createAuthDto);
 
     let user: UserAuthResponse;
 
     try {
-      user = await this.usersService.findByEmail(data.email, {
-        includePassword: true,
-      });
+      user = await this.usersService.findAuthUserByEmail(data.email);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw new UnauthorizedException(messages.auth.invalidCredentials);
@@ -57,6 +62,9 @@ export class AuthService {
 
     return {
       access_token: await this.jwtService.signAsync(payload),
+      userId: user.id,
+      name: user.name,
+      email: user.email,
     };
   }
 }

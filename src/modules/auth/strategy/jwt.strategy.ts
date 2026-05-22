@@ -6,6 +6,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { messages } from '@/common/messages';
 import type { EnvVariables } from '@/config/env';
 import type { UserRole } from '@/database/schema/users.schema';
+import type { AuthenticatedUser } from '@/modules/auth/types/authenticated-user';
 import { UsersService } from '@/modules/users/users.service';
 
 type JwtPayload = {
@@ -27,7 +28,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: JwtPayload) {
+  async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
     const user = await this.usersService
       .findById(payload.sub, { includeRole: true })
       .catch(() => null);
@@ -37,7 +38,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     return {
-      sub: user.id,
+      userId: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
