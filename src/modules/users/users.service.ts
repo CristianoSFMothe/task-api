@@ -7,6 +7,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 
+import { messages } from '@/common/messages';
 import { DATABASE_TOKEN } from '@/database/database.provider';
 import type { DrizzleClient } from '@/database/drizzle.client';
 import { users } from '@/database/schema';
@@ -90,7 +91,7 @@ export class UsersService {
     });
 
     if (existingUser) {
-      throw new ConflictException('Email já cadastrado');
+      throw new ConflictException(messages.user.emailAlreadyRegistered);
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -130,14 +131,14 @@ export class UsersService {
     const user = await this.findUserByIdWithStatus(id);
 
     if (!user || user.status === 'INACTIVE') {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException(messages.user.notFound);
     }
 
     if (options?.includeRole) {
       const userWithRole = await this.findUserByIdWithStatusAndRole(id);
 
       if (!userWithRole || userWithRole.status === 'INACTIVE') {
-        throw new NotFoundException('Usuário não encontrado');
+        throw new NotFoundException(messages.user.notFound);
       }
 
       return this.toUserWithRoleResponse(userWithRole);
@@ -171,7 +172,7 @@ export class UsersService {
       });
 
       if (!user || user.status === 'INACTIVE') {
-        throw new NotFoundException('Usuário não encontrado');
+        throw new NotFoundException(messages.user.notFound);
       }
 
       return user;
@@ -188,7 +189,7 @@ export class UsersService {
     });
 
     if (!user || user.status === 'INACTIVE') {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException(messages.user.notFound);
     }
 
     return this.toUserResponse(user);
@@ -207,7 +208,7 @@ export class UsersService {
       .returning(userPublicColumns);
 
     if (!updatedUser) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException(messages.user.notFound);
     }
 
     return updatedUser;
@@ -230,12 +231,12 @@ export class UsersService {
       .returning(userDeleteColumns);
 
     if (!deletedUser) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException(messages.user.notFound);
     }
 
     return {
       id: deletedUser.id,
-      message: 'Usuário deletado com sucesso',
+      message: messages.user.deletedSuccessfully,
     };
   }
 
@@ -245,7 +246,7 @@ export class UsersService {
 
       return {
         id: user.id,
-        message: 'Usuário já está ativo',
+        message: messages.user.alreadyActive,
       };
     } catch (error) {
       if (!(error instanceof NotFoundException)) {
@@ -256,7 +257,7 @@ export class UsersService {
     const user = await this.findUserByIdWithStatus(id);
 
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException(messages.user.notFound);
     }
 
     const status = userStatusSchema.parse('ACTIVE');
@@ -271,12 +272,12 @@ export class UsersService {
       .returning(userDeleteColumns);
 
     if (!updatedUser) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException(messages.user.notFound);
     }
 
     return {
       id: updatedUser.id,
-      message: 'Status do usuário atualizado com sucesso',
+      message: messages.user.statusUpdatedSuccessfully,
     };
   }
 

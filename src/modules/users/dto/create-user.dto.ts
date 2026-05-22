@@ -1,16 +1,18 @@
 import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 
+import { messages } from '@/common/messages';
+
 export class CreateUserDto {
   @IsString()
-  @IsNotEmpty({ message: 'O nome é obrigatório' })
+  @IsNotEmpty({ message: messages.validation.nameRequired })
   name: string;
 
-  @IsEmail({}, { message: 'Informe um email válido' })
-  @IsNotEmpty({ message: 'O email é obrigatório' })
+  @IsEmail({}, { message: messages.validation.emailInvalid })
+  @IsNotEmpty({ message: messages.validation.emailRequired })
   email: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'A senha é obrigatória' })
-  @MinLength(6, { message: 'A senha deve ter no mínimo 6 caracteres' })
+  @IsNotEmpty({ message: messages.validation.passwordRequired })
+  @MinLength(6, { message: messages.validation.passwordMinLength })
   password: string;
 }

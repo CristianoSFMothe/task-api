@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
+import { messages } from '@/common/messages';
 import type { EnvVariables } from '@/config/env';
 import type { UserRole } from '@/database/schema/users.schema';
 import { UsersService } from '@/modules/users/users.service';
@@ -32,7 +33,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       .catch(() => null);
 
     if (!user) {
-      throw new UnauthorizedException('Token inválido');
+      throw new UnauthorizedException(messages.auth.invalidToken);
     }
 
     return {

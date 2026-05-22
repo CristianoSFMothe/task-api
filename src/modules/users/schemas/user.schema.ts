@@ -1,24 +1,26 @@
 import { z } from 'zod';
 
+import { messages } from '@/common/messages';
+
 export const userStatusSchema = z.enum(['ACTIVE', 'INACTIVE']);
 
 export const createUserSchema = z.object({
   name: z
-    .string({ message: 'O nome é obrigatório' })
-    .min(2, 'O nome deve ter no mínimo 2 caracteres')
-    .max(100, 'O nome deve ter no máximo 100 caracteres')
+    .string({ message: messages.validation.nameRequired })
+    .min(2, messages.validation.nameMinLength)
+    .max(100, messages.validation.nameMaxLength)
     .trim(),
 
   email: z
-    .email('Informe um email válido')
-    .min(1, { message: 'O email é obrigatório' })
+    .email(messages.validation.emailInvalid)
+    .min(1, { message: messages.validation.emailRequired })
     .toLowerCase()
     .trim(),
 
   password: z
-    .string({ message: 'A senha é obrigatória' })
-    .min(6, 'A senha deve ter no mínimo 6 caracteres')
-    .max(100, 'A senha deve ter no máximo 100 caracteres'),
+    .string({ message: messages.validation.passwordRequired })
+    .min(6, messages.validation.passwordMinLength)
+    .max(100, messages.validation.passwordMaxLength),
 });
 
 export const updateNameUserSchema = createUserSchema.pick({
