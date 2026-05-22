@@ -43,10 +43,7 @@ export class AuthService {
       throw error;
     }
 
-    const passwordMatches = await bcrypt.compare(
-      data.password,
-      user.password,
-    );
+    const passwordMatches = await bcrypt.compare(data.password, user.password);
 
     if (!passwordMatches) {
       throw new UnauthorizedException(messages.auth.invalidCredentials);
