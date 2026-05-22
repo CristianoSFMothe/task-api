@@ -14,6 +14,7 @@ import { CreateAuthDto } from './dto/create-auth.dto';
 type JwtPayload = {
   sub: string;
   email: string;
+  role: UserAuthResponse['role'];
 };
 
 @Injectable()
@@ -50,6 +51,7 @@ export class AuthService {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
+      role: user.role,
     };
 
     return {

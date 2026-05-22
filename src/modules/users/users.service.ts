@@ -10,6 +10,7 @@ import { eq } from 'drizzle-orm';
 import { DATABASE_TOKEN } from '@/database/database.provider';
 import type { DrizzleClient } from '@/database/drizzle.client';
 import { users } from '@/database/schema';
+import type { UserRole } from '@/database/schema/users.schema';
 
 import type { CreateUserDto } from './dto/create-user.dto';
 import type { UpdateNameUserDto } from './dto/update-name-user.dto';
@@ -40,14 +41,27 @@ type FindByEmailOptions = {
   includePassword?: boolean;
 };
 
+type FindByIdOptions = {
+  includeRole?: boolean;
+};
+
 export type UserAuthResponse = {
   id: string;
   email: string;
   password: string;
+  role: UserRole;
   status: 'ACTIVE' | 'INACTIVE';
 };
 
 type UserWithStatus = UserResponse & {
+  status: 'ACTIVE' | 'INACTIVE';
+};
+
+type UserWithRole = UserResponse & {
+  role: UserRole;
+};
+
+type UserWithStatusAndRole = UserWithRole & {
   status: 'ACTIVE' | 'INACTIVE';
 };
 
@@ -104,11 +118,29 @@ export class UsersService {
     });
   }
 
-  async findById(id: string): Promise<UserResponse> {
+  async findById(
+    id: string,
+    options: { includeRole: true },
+  ): Promise<UserWithRole>;
+  async findById(id: string, options?: FindByIdOptions): Promise<UserResponse>;
+  async findById(
+    id: string,
+    options?: FindByIdOptions,
+  ): Promise<UserResponse | UserWithRole> {
     const user = await this.findUserByIdWithStatus(id);
 
     if (!user || user.status === 'INACTIVE') {
       throw new NotFoundException('Usuário não encontrado');
+    }
+
+    if (options?.includeRole) {
+      const userWithRole = await this.findUserByIdWithStatusAndRole(id);
+
+      if (!userWithRole || userWithRole.status === 'INACTIVE') {
+        throw new NotFoundException('Usuário não encontrado');
+      }
+
+      return this.toUserWithRoleResponse(userWithRole);
     }
 
     return this.toUserResponse(user);
@@ -132,6 +164,7 @@ export class UsersService {
           id: true,
           email: true,
           password: true,
+          role: true,
           status: true,
         },
         where: eq(users.email, email),
@@ -255,6 +288,15 @@ export class UsersService {
     };
   }
 
+  private toUserWithRoleResponse(user: UserWithStatusAndRole): UserWithRole {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    };
+  }
+
   private findUserByIdWithStatus(
     id: string,
   ): Promise<UserWithStatus | undefined> {
@@ -263,6 +305,21 @@ export class UsersService {
         id: true,
         name: true,
         email: true,
+        status: true,
+      },
+      where: eq(users.id, id),
+    });
+  }
+
+  private findUserByIdWithStatusAndRole(
+    id: string,
+  ): Promise<UserWithStatusAndRole | undefined> {
+    return this.db.query.users.findFirst({
+      columns: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
         status: true,
       },
       where: eq(users.id, id),
