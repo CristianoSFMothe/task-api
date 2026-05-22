@@ -26,6 +26,10 @@ type LoginResponse = {
   email: string;
 };
 
+type LogoutResponse = {
+  message: string;
+};
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -65,6 +69,12 @@ export class AuthService {
       userId: user.id,
       name: user.name,
       email: user.email,
+    };
+  }
+
+  logout(): LogoutResponse {
+    return {
+      message: messages.auth.logoutSuccess,
     };
   }
 }

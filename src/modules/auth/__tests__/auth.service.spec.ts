@@ -78,4 +78,10 @@ describe('AuthService', () => {
       role: 'USER',
     });
   });
+
+  it('should return success message on logout', () => {
+    expect(service.logout()).toEqual({
+      message: 'Logout realizado com sucesso',
+    });
+  });
 });

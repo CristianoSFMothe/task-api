@@ -14,4 +14,10 @@ export class AuthController {
   login(@Body() createAuthDto: CreateAuthDto) {
     return this.authService.login(createAuthDto);
   }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('logout')
+  logout() {
+    return this.authService.logout();
+  }
 }
