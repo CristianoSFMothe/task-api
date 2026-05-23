@@ -9,18 +9,17 @@ import {
   Post,
   Req,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { BadRequestSwagger } from '@/common/swagger/bad-request.swagger';
-import { ConflictSwagger } from '@/common/swagger/conflict.swagger';
-import { ForbiddenSwagger } from '@/common/swagger/forbidden.swagger';
-import { NotFoundSwagger } from '@/common/swagger/not-found.swagger';
-import { UnauthorizedSwagger } from '@/common/swagger/unauthorized.swagger';
+import {
+  ApiAdminAccess,
+  ApiAuthenticated,
+  ApiNotFound,
+  ApiOperationWithDescription,
+  ApiUuidParam,
+  ApiValidationError,
+  ConflictSwagger,
+} from '@/common/swagger';
 import { Public } from '@/modules/auth/decorators/public.decorator';
 import { Roles } from '@/modules/auth/decorators/roles.decorator';
 import type { RequestWithUser } from '@/modules/auth/types/authenticated-user';
@@ -42,9 +41,11 @@ export class UsersController {
 
   @Roles('ADMIN')
   @Get()
-  @ApiBearerAuth()
-  @ApiOperation({
+  @ApiAuthenticated()
+  @ApiOperationWithDescription({
     summary: 'Listar os usuários ativos',
+    description:
+      'Retorna todos os usuários com status ativo. Esta rota exige autenticação e perfil de administrador.',
   })
   @ApiResponse({
     status: 200,
@@ -52,93 +53,59 @@ export class UsersController {
     type: UserResponseDto,
     isArray: true,
   })
-  @ApiResponse({
-    status: 401,
-    description: 'Usuário nao autenticado',
-    type: UnauthorizedSwagger,
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Acesso restrito a administradores',
-    type: ForbiddenSwagger,
-  })
+  @ApiAdminAccess()
   findAll() {
     return this.usersService.findAll();
   }
 
   @Post('find-by-email')
-  @ApiBearerAuth()
-  @ApiOperation({
+  @ApiAuthenticated()
+  @ApiOperationWithDescription({
     summary: 'Buscar um usuário por email',
+    description:
+      'Busca um usuário ativo a partir do email informado no corpo da requisição.',
   })
   @ApiResponse({
     status: 200,
     description: 'Usuário encontrado com sucesso',
     type: UserResponseDto,
   })
-  @ApiResponse({
-    status: 400,
-    description: 'Erro de validação do payload',
-    type: BadRequestSwagger,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Usuário nao autenticado',
-    type: UnauthorizedSwagger,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Usuário nao encontrado',
-    type: NotFoundSwagger,
-  })
+  @ApiValidationError()
+  @ApiNotFound()
   findByEmail(@Body() query: FindUserByEmailDto) {
     return this.usersService.findByEmail(query.email);
   }
 
   @Get('me')
-  @ApiBearerAuth()
-  @ApiOperation({
+  @ApiAuthenticated()
+  @ApiOperationWithDescription({
     summary: 'Obter os dados do usuário autenticado',
+    description:
+      'Retorna os dados básicos do usuário associado ao token enviado na requisição.',
   })
   @ApiResponse({
     status: 200,
     description: 'Dados do usuário autenticado',
     type: UserResponseDto,
   })
-  @ApiResponse({
-    status: 401,
-    description: 'Usuário nao autenticado',
-    type: UnauthorizedSwagger,
-  })
   findMe(@Req() request: RequestWithUser) {
     return this.usersService.findById(request.user.userId);
   }
 
   @Patch('me')
-  @ApiBearerAuth()
-  @ApiOperation({
+  @ApiAuthenticated()
+  @ApiOperationWithDescription({
     summary: 'Atualizar o nome do usuário autenticado',
+    description:
+      'Atualiza apenas o nome do usuário autenticado com base no token enviado.',
   })
   @ApiResponse({
     status: 200,
     description: 'Nome atualizado com sucesso',
     type: UserResponseDto,
   })
-  @ApiResponse({
-    status: 400,
-    description: 'Erro de validação do payload',
-    type: BadRequestSwagger,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Usuário nao autenticado',
-    type: UnauthorizedSwagger,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Usuário nao encontrado',
-    type: NotFoundSwagger,
-  })
+  @ApiValidationError()
+  @ApiNotFound()
   updateMyName(
     @Req() request: RequestWithUser,
     @Body() updateNameUserDto: UpdateNameUserDto,
@@ -148,89 +115,59 @@ export class UsersController {
 
   @Patch(':id/status')
   @Roles('ADMIN')
-  @ApiBearerAuth()
-  @ApiOperation({
+  @ApiAuthenticated()
+  @ApiOperationWithDescription({
     summary: 'Reativar um usuário inativo',
+    description:
+      'Reativa um usuário inativo a partir do UUID informado. Esta rota exige autenticação e perfil de administrador.',
   })
+  @ApiUuidParam('id', 'UUID do usuário que será reativado')
   @ApiResponse({
     status: 200,
     description: 'Status do usuário atualizado',
     type: UpdateUserStatusResponseDto,
   })
-  @ApiResponse({
-    status: 400,
-    description: 'UUID invalido',
-    type: BadRequestSwagger,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Usuário nao autenticado',
-    type: UnauthorizedSwagger,
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Acesso restrito a administradores',
-    type: ForbiddenSwagger,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Usuário nao encontrado',
-    type: NotFoundSwagger,
-  })
+  @ApiValidationError('UUID inválido')
+  @ApiAdminAccess()
+  @ApiNotFound()
   updateStatus(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.usersService.updateStatus(id);
   }
 
   @Roles('ADMIN')
   @Delete(':id')
-  @ApiBearerAuth()
-  @ApiOperation({
+  @ApiAuthenticated()
+  @ApiOperationWithDescription({
     summary: 'Desativar um usuário',
+    description:
+      'Realiza a exclusão lógica de um usuário a partir do UUID informado. Esta rota exige autenticação e perfil de administrador.',
   })
+  @ApiUuidParam('id', 'UUID do usuário que será desativado')
   @ApiResponse({
     status: 200,
     description: 'Usuário deletado com sucesso',
     type: DeleteUserResponseDto,
   })
-  @ApiResponse({
-    status: 400,
-    description: 'UUID invalido',
-    type: BadRequestSwagger,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Usuário nao autenticado',
-    type: UnauthorizedSwagger,
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Acesso restrito a administradores',
-    type: ForbiddenSwagger,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Usuário nao encontrado',
-    type: NotFoundSwagger,
-  })
+  @ApiValidationError('UUID inválido')
+  @ApiAdminAccess()
+  @ApiNotFound()
   delete(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.usersService.delete(id);
   }
 
   @Public()
   @Post()
-  @ApiOperation({
+  @ApiOperationWithDescription({
     summary: 'Criar um novo usuário',
+    description:
+      'Cria um novo usuário com nome, email e senha válidos, retornando os dados públicos do registro criado.',
   })
   @ApiResponse({
     status: 201,
     description: 'Usuário adicionado com sucesso',
     type: UserResponseDto,
   })
-  @ApiResponse({
-    status: 400,
-    description: 'Erro de validação do payload',
-    type: BadRequestSwagger,
-  })
+  @ApiValidationError()
   @ApiResponse({
     status: 409,
     description: 'Email já cadastrado',

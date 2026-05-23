@@ -27,8 +27,19 @@ async function bootstrap() {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Task API')
-    .setDescription('Documentacao da API de autenticacao e usuarios')
+    .setDescription(
+      'Documentação da Task API para gerenciamento de tarefas, usuários e autenticação da aplicação.',
+    )
     .setVersion('1.0.0')
+    .setContact(
+      'Cristiano Ferreira Mothe',
+      'https://github.com/CristianoSFMothe/task-api',
+      '',
+    )
+    .setExternalDoc(
+      'LinkedIn de Cristiano Ferreira Mothe',
+      'https://www.linkedin.com/in/cristiano-da-silva-ferreira/',
+    )
     .addBearerAuth()
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
