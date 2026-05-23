@@ -389,6 +389,19 @@ describe('UsersService', () => {
     expect(updatePayload.updatedAt).toBeInstanceOf(Date);
   });
 
+  it('should reject updateStatus when reactivation update returns no user', async () => {
+    db.query.users.findFirst
+      .mockResolvedValueOnce(mockInactiveUserWithStatus)
+      .mockResolvedValueOnce(mockInactiveUserWithStatus);
+    updateReturningMock.mockResolvedValue([]);
+
+    await expect(
+      service.updateStatus(mockInactiveUserId),
+    ).rejects.toMatchObject({
+      message: messages.user.notFound,
+    });
+  });
+
   it('should reject updateStatus when user does not exist', async () => {
     db.query.users.findFirst.mockResolvedValue(undefined);
 
