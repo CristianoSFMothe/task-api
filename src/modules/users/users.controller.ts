@@ -16,6 +16,7 @@ import {
   ApiAuthenticated,
   ApiNotFound,
   ApiOperationWithDescription,
+  ApiServerErrorResponse,
   ApiUuidParam,
   ApiValidationError,
   ConflictSwagger,
@@ -54,6 +55,7 @@ export class UsersController {
     isArray: true,
   })
   @ApiAdminAccess()
+  @ApiServerErrorResponse()
   findAll() {
     return this.usersService.findAll();
   }
@@ -72,6 +74,7 @@ export class UsersController {
   })
   @ApiValidationError()
   @ApiNotFound()
+  @ApiServerErrorResponse()
   findByEmail(@Body() query: FindUserByEmailDto) {
     return this.usersService.findByEmail(query.email);
   }
@@ -88,6 +91,7 @@ export class UsersController {
     description: 'Dados do usuário autenticado',
     type: UserResponseDto,
   })
+  @ApiServerErrorResponse()
   findMe(@Req() request: RequestWithUser) {
     return this.usersService.findById(request.user.userId);
   }
@@ -106,6 +110,7 @@ export class UsersController {
   })
   @ApiValidationError()
   @ApiNotFound()
+  @ApiServerErrorResponse()
   updateMyName(
     @Req() request: RequestWithUser,
     @Body() updateNameUserDto: UpdateNameUserDto,
@@ -130,6 +135,7 @@ export class UsersController {
   @ApiValidationError('UUID inválido')
   @ApiAdminAccess()
   @ApiNotFound()
+  @ApiServerErrorResponse()
   updateStatus(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.usersService.updateStatus(id);
   }
@@ -151,6 +157,7 @@ export class UsersController {
   @ApiValidationError('UUID inválido')
   @ApiAdminAccess()
   @ApiNotFound()
+  @ApiServerErrorResponse()
   delete(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.usersService.delete(id);
   }
@@ -173,6 +180,7 @@ export class UsersController {
     description: 'Email já cadastrado',
     type: ConflictSwagger,
   })
+  @ApiServerErrorResponse()
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }

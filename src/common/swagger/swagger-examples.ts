@@ -24,5 +24,6 @@ export const swaggerExamples = {
     forbiddenMessage: 'Forbidden resource',
     notFoundMessage: 'Usuário não encontrado',
     conflictMessage: 'Email já cadastrado',
+    internalServerErrorMessage: 'Erro interno do servidor',
   },
 };

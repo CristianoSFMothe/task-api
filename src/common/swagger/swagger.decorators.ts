@@ -8,6 +8,7 @@ import {
 
 import { BadRequestSwagger } from './bad-request.swagger';
 import { ForbiddenSwagger } from './forbidden.swagger';
+import { InternalServerErrorSwagger } from './internal-server-error.swagger';
 import { NotFoundSwagger } from './not-found.swagger';
 import { UnauthorizedSwagger } from './unauthorized.swagger';
 
@@ -16,11 +17,13 @@ type OperationMetadata = {
   description: string;
 };
 
-export function ApiOperationWithDescription(metadata: OperationMetadata) {
+export function ApiOperationWithDescription(
+  metadata: OperationMetadata,
+): MethodDecorator {
   return ApiOperation(metadata);
 }
 
-export function ApiAuthenticated() {
+export function ApiAuthenticated(): MethodDecorator {
   return applyDecorators(
     ApiBearerAuth(),
     ApiResponse({
@@ -31,7 +34,7 @@ export function ApiAuthenticated() {
   );
 }
 
-export function ApiAdminAccess() {
+export function ApiAdminAccess(): MethodDecorator {
   return ApiResponse({
     status: 403,
     description: 'Acesso restrito a administradores',
@@ -41,7 +44,7 @@ export function ApiAdminAccess() {
 
 export function ApiValidationError(
   description = 'Erro de validação do payload',
-) {
+): MethodDecorator {
   return ApiResponse({
     status: 400,
     description,
@@ -52,7 +55,7 @@ export function ApiValidationError(
 export function ApiUuidParam(
   name = 'id',
   description = 'Identificador único do usuário',
-) {
+): MethodDecorator {
   return ApiParam({
     name,
     description,
@@ -61,10 +64,22 @@ export function ApiUuidParam(
   });
 }
 
-export function ApiNotFound(description = 'Usuário não encontrado') {
+export function ApiNotFound(
+  description = 'Usuário não encontrado',
+): MethodDecorator {
   return ApiResponse({
     status: 404,
     description,
     type: NotFoundSwagger,
+  });
+}
+
+export function ApiServerErrorResponse(
+  description = 'Erro interno do servidor',
+): MethodDecorator {
+  return ApiResponse({
+    status: 500,
+    description,
+    type: InternalServerErrorSwagger,
   });
 }

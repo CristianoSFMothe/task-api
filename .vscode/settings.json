@@ -38,5 +38,6 @@
   "prettier.requireConfig": true,
   "prettier.prettierPath": "./node_modules/prettier",
   // desliga o linter global incompatível com eslint.config.mjs
-  "linter.enabled": false
+  "linter.enabled": false,
+  "postman.settings.dotenv-detection-notification-visibility": false
 }

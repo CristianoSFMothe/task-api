@@ -4,6 +4,7 @@ import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   ApiAuthenticated,
   ApiOperationWithDescription,
+  ApiServerErrorResponse,
   ApiValidationError,
   UnauthorizedSwagger,
 } from '@/common/swagger';
@@ -38,6 +39,7 @@ export class AuthController {
     description: 'Email ou senha inválidos',
     type: UnauthorizedSwagger,
   })
+  @ApiServerErrorResponse()
   login(@Body() createAuthDto: CreateAuthDto) {
     return this.authService.login(createAuthDto);
   }
@@ -55,6 +57,7 @@ export class AuthController {
     description: 'Logout realizado com sucesso',
     type: LogoutResponseDto,
   })
+  @ApiServerErrorResponse()
   logout() {
     return this.authService.logout();
   }
