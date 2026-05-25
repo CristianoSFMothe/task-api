@@ -7,4 +7,5 @@ export const validationMessages = {
   passwordRequired: 'A senha é obrigatória',
   passwordMinLength: 'A senha deve ter no mínimo 6 caracteres',
   passwordMaxLength: 'A senha deve ter no máximo 100 caracteres',
+  taskTitleRequired: 'O título é obrigatório',
 };

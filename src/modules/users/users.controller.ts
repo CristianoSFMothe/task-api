@@ -27,6 +27,7 @@ import type { RequestWithUser } from '@/modules/auth/types/authenticated-user';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { FindUserByEmailDto } from './dto/find-user-by-email.dto';
+import { FindUserByNameDto } from './dto/find-user-by-name.dto';
 import { UpdateNameUserDto } from './dto/update-name-user.dto';
 import {
   DeleteUserResponseDto,
@@ -70,6 +71,22 @@ export class UsersController {
   @ApiServerErrorResponse()
   findByEmail(@Body() query: FindUserByEmailDto) {
     return this.usersService.findByEmail(query.email);
+  }
+
+  @Post('find-by-name')
+  @ApiAuthenticated()
+  @ApiOperationWithDescription(usersDocumentation.findByName)
+  @ApiResponse({
+    status: 200,
+    description: usersDocumentation.findByName.successDescription,
+    type: UserResponseDto,
+    isArray: true,
+  })
+  @ApiValidationError()
+  @ApiNotFound()
+  @ApiServerErrorResponse()
+  findByName(@Body() query: FindUserByNameDto) {
+    return this.usersService.findByName(query.name);
   }
 
   @Get('me')

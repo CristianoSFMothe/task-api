@@ -27,11 +27,16 @@ export const updateNameUserSchema = createUserSchema.pick({
   name: true,
 });
 
+export const findUserByNameSchema = z.object({
+  name: createUserSchema.shape.name,
+});
+
 export const deleteUserSchema = z.object({
   status: userStatusSchema,
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
+export type FindUserByNameInput = z.infer<typeof findUserByNameSchema>;
 export type UpdateNameUserInput = z.infer<typeof updateNameUserSchema>;
 export type UserStatusInput = z.infer<typeof userStatusSchema>;
 export type DeleteUserInput = z.infer<typeof deleteUserSchema>;

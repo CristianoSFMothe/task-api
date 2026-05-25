@@ -10,6 +10,7 @@ import {
   mockCreateUserDtoWithNormalization,
   mockDeletedUserResponse,
   mockFindUserByEmailDto,
+  mockFindUserByName,
   mockInactiveUserId,
   mockInactiveUserWithStatus,
   mockInactiveUserWithStatusAndRole,
@@ -254,6 +255,24 @@ describe('UsersService', () => {
       });
     },
   );
+
+  it('should return users by name', async () => {
+    db.query.users.findMany.mockResolvedValue(mockUsersList);
+
+    await expect(service.findByName(mockFindUserByName)).resolves.toEqual(
+      mockUsersList,
+    );
+
+    expect(db.query.users.findMany.mock.calls).toHaveLength(1);
+  });
+
+  it('should reject findByName when no active users are found', async () => {
+    db.query.users.findMany.mockResolvedValue([]);
+
+    await expect(service.findByName(mockFindUserByName)).rejects.toMatchObject({
+      message: messages.user.notFound,
+    });
+  });
 
   it('should return auth user by email', async () => {
     db.query.users.findFirst.mockResolvedValue(mockUserAuthResponse);

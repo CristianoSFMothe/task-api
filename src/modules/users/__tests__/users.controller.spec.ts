@@ -7,6 +7,7 @@ import {
   mockCreateUserDto,
   mockDeletedUserResponse,
   mockFindUserByEmailDto,
+  mockFindUserByNameDto,
   mockUpdatedStatusResponse,
   mockUpdateNameUserDto,
   mockUser,
@@ -22,6 +23,7 @@ describe('UsersController', () => {
     create: jest.Mock;
     findAll: jest.Mock;
     findByEmail: jest.Mock;
+    findByName: jest.Mock;
     findById: jest.Mock;
     updateName: jest.Mock;
     updateStatus: jest.Mock;
@@ -33,6 +35,7 @@ describe('UsersController', () => {
       create: jest.fn(),
       findAll: jest.fn(),
       findByEmail: jest.fn(),
+      findByName: jest.fn(),
       findById: jest.fn(),
       updateName: jest.fn(),
       updateStatus: jest.fn(),
@@ -84,6 +87,17 @@ describe('UsersController', () => {
     ).resolves.toEqual(mockUser);
     expect(usersService.findByEmail).toHaveBeenCalledWith(
       mockFindUserByEmailDto.email,
+    );
+  });
+
+  it('should delegate findByName to users service', async () => {
+    usersService.findByName.mockResolvedValue(mockUsersList);
+
+    await expect(controller.findByName(mockFindUserByNameDto)).resolves.toEqual(
+      mockUsersList,
+    );
+    expect(usersService.findByName).toHaveBeenCalledWith(
+      mockFindUserByNameDto.name,
     );
   });
 

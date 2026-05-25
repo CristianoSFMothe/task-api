@@ -11,6 +11,12 @@ export const usersDocumentation = {
       'Busca um usuário ativo a partir do email informado no corpo da requisição.',
     successDescription: 'Usuário encontrado com sucesso',
   },
+  findByName: {
+    summary: 'Buscar usuários por nome',
+    description:
+      'Busca usuários ativos a partir do nome informado no corpo da requisição.',
+    successDescription: 'Usuários encontrados com sucesso',
+  },
   findMe: {
     summary: 'Obter os dados do usuário autenticado',
     description:

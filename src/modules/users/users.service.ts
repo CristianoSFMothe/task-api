@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { eq } from 'drizzle-orm';
+import { and, eq, ilike } from 'drizzle-orm';
 
 import { messages } from '@/common/messages';
 import { DATABASE_TOKEN } from '@/database/database.provider';
@@ -18,6 +18,7 @@ import type { UpdateNameUserDto } from './dto/update-name-user.dto';
 import {
   createUserSchema,
   deleteUserSchema,
+  findUserByNameSchema,
   updateNameUserSchema,
   userStatusSchema,
 } from './schemas/user.schema';
@@ -160,6 +161,28 @@ export class UsersService {
     }
 
     return this.toUserResponse(user);
+  }
+
+  async findByName(name: string): Promise<UserResponse[]> {
+    const data = findUserByNameSchema.parse({ name });
+
+    const foundUsers = await this.db.query.users.findMany({
+      columns: {
+        id: true,
+        name: true,
+        email: true,
+      },
+      where: and(
+        eq(users.status, 'ACTIVE'),
+        ilike(users.name, `%${data.name}%`),
+      ),
+    });
+
+    if (foundUsers.length === 0) {
+      throw new NotFoundException(messages.user.notFound);
+    }
+
+    return foundUsers;
   }
 
   async findAuthUserByEmail(email: string): Promise<UserAuthResponse> {

@@ -2,6 +2,7 @@ import type { RequestWithUser } from '@/modules/auth/types/authenticated-user';
 
 import type { CreateUserDto } from '../dto/create-user.dto';
 import type { FindUserByEmailDto } from '../dto/find-user-by-email.dto';
+import type { FindUserByNameDto } from '../dto/find-user-by-name.dto';
 import type { UpdateNameUserDto } from '../dto/update-name-user.dto';
 import type { UserAuthResponse } from '../users.service';
 
@@ -29,6 +30,12 @@ export const mockInvalidCreateUserDto: CreateUserDto = {
 
 export const mockFindUserByEmailDto: FindUserByEmailDto = {
   email: 'john@example.com',
+};
+
+export const mockFindUserByName = 'john';
+
+export const mockFindUserByNameDto: FindUserByNameDto = {
+  name: 'John Doe',
 };
 
 export const mockUpdateNameUserDto: UpdateNameUserDto = {

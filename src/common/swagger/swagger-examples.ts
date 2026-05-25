@@ -15,6 +15,11 @@ export const swaggerExamples = {
     deletedMessage: 'Usuário deletado com sucesso',
     statusUpdatedMessage: 'Status do usuário atualizado com sucesso',
   },
+  task: {
+    title: 'Preparar documentação da API',
+    description: 'Consolidar os endpoints do módulo de tarefas.',
+    tags: ['backend', 'documentacao'],
+  },
   errors: {
     badRequestMessages: [
       'Informe um email válido',
