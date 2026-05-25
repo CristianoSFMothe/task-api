@@ -33,6 +33,7 @@ import {
   UpdateUserStatusResponseDto,
   UserResponseDto,
 } from './dto/user-response.dto';
+import { usersDocumentation } from './users.documentation';
 import { UsersService } from './users.service';
 
 @ApiTags('Users')
@@ -43,14 +44,10 @@ export class UsersController {
   @Roles('ADMIN')
   @Get()
   @ApiAuthenticated()
-  @ApiOperationWithDescription({
-    summary: 'Listar os usuários ativos',
-    description:
-      'Retorna todos os usuários com status ativo. Esta rota exige autenticação e perfil de administrador.',
-  })
+  @ApiOperationWithDescription(usersDocumentation.findAll)
   @ApiResponse({
     status: 200,
-    description: 'Lista de usuários ativos',
+    description: usersDocumentation.findAll.successDescription,
     type: UserResponseDto,
     isArray: true,
   })
@@ -62,14 +59,10 @@ export class UsersController {
 
   @Post('find-by-email')
   @ApiAuthenticated()
-  @ApiOperationWithDescription({
-    summary: 'Buscar um usuário por email',
-    description:
-      'Busca um usuário ativo a partir do email informado no corpo da requisição.',
-  })
+  @ApiOperationWithDescription(usersDocumentation.findByEmail)
   @ApiResponse({
     status: 200,
-    description: 'Usuário encontrado com sucesso',
+    description: usersDocumentation.findByEmail.successDescription,
     type: UserResponseDto,
   })
   @ApiValidationError()
@@ -81,14 +74,10 @@ export class UsersController {
 
   @Get('me')
   @ApiAuthenticated()
-  @ApiOperationWithDescription({
-    summary: 'Obter os dados do usuário autenticado',
-    description:
-      'Retorna os dados básicos do usuário associado ao token enviado na requisição.',
-  })
+  @ApiOperationWithDescription(usersDocumentation.findMe)
   @ApiResponse({
     status: 200,
-    description: 'Dados do usuário autenticado',
+    description: usersDocumentation.findMe.successDescription,
     type: UserResponseDto,
   })
   @ApiServerErrorResponse()
@@ -98,14 +87,10 @@ export class UsersController {
 
   @Patch('me')
   @ApiAuthenticated()
-  @ApiOperationWithDescription({
-    summary: 'Atualizar o nome do usuário autenticado',
-    description:
-      'Atualiza apenas o nome do usuário autenticado com base no token enviado.',
-  })
+  @ApiOperationWithDescription(usersDocumentation.updateMyName)
   @ApiResponse({
     status: 200,
-    description: 'Nome atualizado com sucesso',
+    description: usersDocumentation.updateMyName.successDescription,
     type: UserResponseDto,
   })
   @ApiValidationError()
@@ -121,18 +106,16 @@ export class UsersController {
   @Patch(':id/status')
   @Roles('ADMIN')
   @ApiAuthenticated()
-  @ApiOperationWithDescription({
-    summary: 'Reativar um usuário inativo',
-    description:
-      'Reativa um usuário inativo a partir do UUID informado. Esta rota exige autenticação e perfil de administrador.',
-  })
-  @ApiUuidParam('id', 'UUID do usuário que será reativado')
+  @ApiOperationWithDescription(usersDocumentation.updateStatus)
+  @ApiUuidParam('id', usersDocumentation.updateStatus.uuidParamDescription)
   @ApiResponse({
     status: 200,
-    description: 'Status do usuário atualizado',
+    description: usersDocumentation.updateStatus.successDescription,
     type: UpdateUserStatusResponseDto,
   })
-  @ApiValidationError('UUID inválido')
+  @ApiValidationError(
+    usersDocumentation.updateStatus.validationErrorDescription,
+  )
   @ApiAdminAccess()
   @ApiNotFound()
   @ApiServerErrorResponse()
@@ -143,18 +126,14 @@ export class UsersController {
   @Roles('ADMIN')
   @Delete(':id')
   @ApiAuthenticated()
-  @ApiOperationWithDescription({
-    summary: 'Desativar um usuário',
-    description:
-      'Realiza a exclusão lógica de um usuário a partir do UUID informado. Esta rota exige autenticação e perfil de administrador.',
-  })
-  @ApiUuidParam('id', 'UUID do usuário que será desativado')
+  @ApiOperationWithDescription(usersDocumentation.delete)
+  @ApiUuidParam('id', usersDocumentation.delete.uuidParamDescription)
   @ApiResponse({
     status: 200,
-    description: 'Usuário deletado com sucesso',
+    description: usersDocumentation.delete.successDescription,
     type: DeleteUserResponseDto,
   })
-  @ApiValidationError('UUID inválido')
+  @ApiValidationError(usersDocumentation.delete.validationErrorDescription)
   @ApiAdminAccess()
   @ApiNotFound()
   @ApiServerErrorResponse()
@@ -164,20 +143,16 @@ export class UsersController {
 
   @Public()
   @Post()
-  @ApiOperationWithDescription({
-    summary: 'Criar um novo usuário',
-    description:
-      'Cria um novo usuário com nome, email e senha válidos, retornando os dados públicos do registro criado.',
-  })
+  @ApiOperationWithDescription(usersDocumentation.create)
   @ApiResponse({
     status: 201,
-    description: 'Usuário adicionado com sucesso',
+    description: usersDocumentation.create.successDescription,
     type: UserResponseDto,
   })
   @ApiValidationError()
   @ApiResponse({
     status: 409,
-    description: 'Email já cadastrado',
+    description: usersDocumentation.create.conflictDescription,
     type: ConflictSwagger,
   })
   @ApiServerErrorResponse()

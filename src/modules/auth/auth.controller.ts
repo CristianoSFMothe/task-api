@@ -9,6 +9,7 @@ import {
   UnauthorizedSwagger,
 } from '@/common/swagger';
 
+import { authDocumentation } from './auth.documentation';
 import { AuthService } from './auth.service';
 import { Public } from './decorators/public.decorator';
 import { CreateAuthDto } from './dto/create-auth.dto';
@@ -23,20 +24,16 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  @ApiOperationWithDescription({
-    summary: 'Autenticar um usuário',
-    description:
-      'Recebe email e senha válidos e retorna um token JWT com os dados básicos do usuário autenticado.',
-  })
+  @ApiOperationWithDescription(authDocumentation.login)
   @ApiResponse({
     status: 200,
-    description: 'Usuário autenticado com sucesso',
+    description: authDocumentation.login.successDescription,
     type: LoginResponseDto,
   })
   @ApiValidationError()
   @ApiResponse({
     status: 401,
-    description: 'Email ou senha inválidos',
+    description: authDocumentation.login.unauthorizedDescription,
     type: UnauthorizedSwagger,
   })
   @ApiServerErrorResponse()
@@ -47,14 +44,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('logout')
   @ApiAuthenticated()
-  @ApiOperationWithDescription({
-    summary: 'Encerrar a sessão do usuário autenticado',
-    description:
-      'Encerra a sessão lógica do usuário autenticado e retorna uma mensagem de confirmação.',
-  })
+  @ApiOperationWithDescription(authDocumentation.logout)
   @ApiResponse({
     status: 200,
-    description: 'Logout realizado com sucesso',
+    description: authDocumentation.logout.successDescription,
     type: LogoutResponseDto,
   })
   @ApiServerErrorResponse()
