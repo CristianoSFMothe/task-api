@@ -19,6 +19,7 @@ export const swaggerExamples = {
     title: 'Preparar documentação da API',
     description: 'Consolidar os endpoints do módulo de tarefas.',
     tags: ['backend', 'documentacao'],
+    status: 'IN_PROGRESS' as const,
   },
   errors: {
     badRequestMessages: [

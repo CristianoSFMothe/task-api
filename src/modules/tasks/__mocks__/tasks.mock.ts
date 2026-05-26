@@ -2,6 +2,7 @@ import type { RequestWithUser } from '@/modules/auth/types/authenticated-user';
 
 import type { CreateTaskDto } from '../dto/create-task.dto';
 import type { FindTasksDto } from '../dto/find-tasks.dto';
+import type { UpdateTaskStatusDto } from '../dto/update-task-status.dto';
 
 export const mockTaskId = '8f0506ab-70d3-4aab-bec9-6bd22fba8a70';
 export const mockTaskOwnerId = '6f0506ab-70d3-4aab-bec9-6bd22fba8a66';
@@ -22,6 +23,24 @@ export const mockAdminTaskRequest = {
     email: 'admin@example.com',
     name: 'Admin User',
     role: 'ADMIN',
+  },
+} as RequestWithUser;
+
+export const mockResponsibleTaskRequest = {
+  user: {
+    userId: mockResponsibleId,
+    email: 'mary@example.com',
+    name: 'Mary Doe',
+    role: 'USER',
+  },
+} as RequestWithUser;
+
+export const mockUnauthorizedTaskRequest = {
+  user: {
+    userId: '4f0506ab-70d3-4aab-bec9-6bd22fba8a72',
+    email: 'outsider@example.com',
+    name: 'Outsider User',
+    role: 'USER',
   },
 } as RequestWithUser;
 
@@ -83,6 +102,26 @@ export const mockInvalidFindTasksDto = {
   status: 'INVALID_STATUS',
 };
 
+export const mockUpdateTaskStatusToInProgressDto: UpdateTaskStatusDto = {
+  status: 'IN_PROGRESS',
+};
+
+export const mockUpdateTaskStatusToDoneDto: UpdateTaskStatusDto = {
+  status: 'DONE',
+};
+
+export const mockUpdateTaskStatusToPausedDto: UpdateTaskStatusDto = {
+  status: 'PAUSED',
+};
+
+export const mockUpdateTaskStatusToCancelledDto: UpdateTaskStatusDto = {
+  status: 'CANCELLED',
+};
+
+export const mockInvalidUpdateTaskStatusDto = {
+  status: 'INVALID_STATUS',
+};
+
 export const mockCreatedTask = {
   id: mockTaskId,
   title: 'Preparar documentação da API',
@@ -103,4 +142,28 @@ export const mockCreatedTaskForOtherUser = {
   createdBy: 'Admin User',
   userId: '7f0506ab-70d3-4aab-bec9-6bd22fba8a69',
   responsibleId: mockResponsibleId,
+};
+
+export const mockPendingTaskRecord = {
+  id: mockTaskId,
+  status: 'PENDING' as const,
+  userId: mockTaskOwnerId,
+  responsibleId: null,
+  startedAt: null,
+};
+
+export const mockInProgressTaskRecord = {
+  id: mockTaskId,
+  status: 'IN_PROGRESS' as const,
+  userId: mockTaskOwnerId,
+  responsibleId: null,
+  startedAt: new Date('2026-05-20T12:00:00.000Z'),
+};
+
+export const mockBlockedTaskRecord = {
+  id: mockTaskId,
+  status: 'BLOCKED' as const,
+  userId: mockTaskOwnerId,
+  responsibleId: mockResponsibleId,
+  startedAt: new Date('2026-05-20T12:00:00.000Z'),
 };

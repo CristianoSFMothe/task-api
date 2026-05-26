@@ -1,0 +1,25 @@
+meta {
+  name: UpdateStatus
+  type: http
+  seq: 9
+}
+
+patch {
+  url: {{baseUrl}}/tasks/{{targetTaskId}}/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  content-type: application/json
+}
+
+body:json {
+  {
+    "status": "{{taskUpdateStatus}}"
+  }
+}

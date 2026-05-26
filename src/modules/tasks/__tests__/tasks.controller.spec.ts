@@ -4,6 +4,7 @@ import {
   mockAuthenticatedTaskRequest,
   mockCreateTaskDto,
   mockFindTasksDto,
+  mockUpdateTaskStatusToInProgressDto,
 } from '@/modules/tasks/__mocks__/tasks.mock';
 
 import { TasksController } from '../tasks.controller';
@@ -11,12 +12,17 @@ import { TasksService } from '../tasks.service';
 
 describe('TasksController', () => {
   let controller: TasksController;
-  let tasksService: { create: jest.Mock; findAll: jest.Mock };
+  let tasksService: {
+    create: jest.Mock;
+    findAll: jest.Mock;
+    updateStatus: jest.Mock;
+  };
 
   beforeEach(async () => {
     tasksService = {
       create: jest.fn(),
       findAll: jest.fn(),
+      updateStatus: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -79,6 +85,41 @@ describe('TasksController', () => {
 
     await expect(
       controller.findAll(mockAuthenticatedTaskRequest, mockFindTasksDto),
+    ).rejects.toBe(error);
+  });
+
+  it('should delegate updateStatus with authenticated user', async () => {
+    tasksService.updateStatus.mockResolvedValue({
+      id: 'task-id',
+      status: 'IN_PROGRESS',
+    });
+
+    await expect(
+      controller.updateStatus(
+        mockAuthenticatedTaskRequest,
+        'task-id',
+        mockUpdateTaskStatusToInProgressDto,
+      ),
+    ).resolves.toEqual({ id: 'task-id', status: 'IN_PROGRESS' });
+
+    expect(tasksService.updateStatus).toHaveBeenCalledWith(
+      mockAuthenticatedTaskRequest.user,
+      'task-id',
+      mockUpdateTaskStatusToInProgressDto,
+    );
+  });
+
+  it('should propagate updateStatus errors from service', async () => {
+    const error = new Error('update failed');
+
+    tasksService.updateStatus.mockRejectedValue(error);
+
+    await expect(
+      controller.updateStatus(
+        mockAuthenticatedTaskRequest,
+        'task-id',
+        mockUpdateTaskStatusToInProgressDto,
+      ),
     ).rejects.toBe(error);
   });
 });

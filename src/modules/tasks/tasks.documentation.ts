@@ -13,4 +13,15 @@ export const tasksDocumentation = {
       'Retorna a lista de tarefas disponíveis para o usuário autenticado, com filtros opcionais por título, status, tag e responsável.',
     successDescription: 'Lista de tarefas retornada com sucesso',
   },
+  updateStatus: {
+    summary: 'Atualizar status da tarefa',
+    description:
+      'Atualiza o status de uma tarefa usando uma transição explícita e validada pelo backend.',
+    successDescription: 'Status da tarefa atualizado com sucesso',
+    uuidParamDescription: 'UUID da tarefa que terá o status atualizado',
+    validationErrorDescription: 'UUID inválido ou transição de status inválida',
+    forbiddenDescription:
+      'Apenas administradores, dono da tarefa ou responsável podem atualizar o status',
+    notFoundDescription: 'Tarefa não encontrada',
+  },
 } as const;

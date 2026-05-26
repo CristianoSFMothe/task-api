@@ -58,5 +58,10 @@ export const findTasksSchema = z.object({
   responsibleId: z.uuid().optional(),
 });
 
+export const updateTaskStatusSchema = z.object({
+  status: taskStatusSchema,
+});
+
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type FindTasksInput = z.infer<typeof findTasksSchema>;
+export type UpdateTaskStatusInput = z.infer<typeof updateTaskStatusSchema>;

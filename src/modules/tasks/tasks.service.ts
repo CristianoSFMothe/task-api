@@ -1,4 +1,10 @@
-import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { and, arrayContains, desc, eq, ilike, or, type SQL } from 'drizzle-orm';
 
 import { messages } from '@/common/messages';
@@ -10,10 +16,12 @@ import { UsersService } from '@/modules/users/users.service';
 
 import type { CreateTaskDto } from './dto/create-task.dto';
 import type { FindTasksDto } from './dto/find-tasks.dto';
+import type { UpdateTaskStatusDto } from './dto/update-task-status.dto';
 import {
   createTaskSchema,
   findTasksSchema,
   taskStatusValues,
+  updateTaskStatusSchema,
 } from './schemas/task.schema';
 
 type TaskResponse = {
@@ -48,6 +56,26 @@ const taskQueryColumns = {
   userId: true,
   responsibleId: true,
 } as const;
+
+const taskStatusUpdateColumns = {
+  id: true,
+  status: true,
+  userId: true,
+  responsibleId: true,
+  startedAt: true,
+} as const;
+
+const allowedTaskStatusTransitions: Record<
+  (typeof taskStatusValues)[number],
+  Array<(typeof taskStatusValues)[number]>
+> = {
+  PENDING: ['IN_PROGRESS', 'CANCELLED'],
+  IN_PROGRESS: ['DONE', 'PAUSED', 'BLOCKED', 'CANCELLED'],
+  PAUSED: ['IN_PROGRESS', 'BLOCKED', 'CANCELLED'],
+  BLOCKED: ['IN_PROGRESS', 'PAUSED', 'CANCELLED'],
+  DONE: [],
+  CANCELLED: [],
+};
 
 @Injectable()
 export class TasksService {
@@ -128,6 +156,43 @@ export class TasksService {
     });
   }
 
+  async updateStatus(
+    authenticatedUser: AuthenticatedUser,
+    id: string,
+    updateTaskStatusDto: UpdateTaskStatusDto,
+  ): Promise<TaskResponse> {
+    const data = updateTaskStatusSchema.parse(updateTaskStatusDto);
+    const task = await this.db.query.tasks.findFirst({
+      columns: taskStatusUpdateColumns,
+      where: eq(tasks.id, id),
+    });
+
+    if (!task) {
+      throw new NotFoundException(messages.task.notFound);
+    }
+
+    if (!this.canUpdateTaskStatus(authenticatedUser, task)) {
+      throw new ForbiddenException(messages.task.updateStatusForbidden);
+    }
+
+    if (!this.isStatusTransitionAllowed(task.status, data.status)) {
+      throw new BadRequestException(messages.task.invalidStatusTransition);
+    }
+
+    const now = new Date();
+    const [updatedTask] = await this.db
+      .update(tasks)
+      .set(this.buildTaskStatusUpdatePayload(task.startedAt, data.status, now))
+      .where(eq(tasks.id, id))
+      .returning(taskResponseColumns);
+
+    if (!updatedTask) {
+      throw new NotFoundException(messages.task.notFound);
+    }
+
+    return updatedTask;
+  }
+
   private async resolveTaskUser(
     authenticatedUser: AuthenticatedUser,
     userEmail?: string,
@@ -169,5 +234,53 @@ export class TasksService {
     }
 
     return this.usersService.findByEmail(responsibleEmail);
+  }
+
+  private canUpdateTaskStatus(
+    authenticatedUser: AuthenticatedUser,
+    task: {
+      userId: string;
+      responsibleId: string | null;
+    },
+  ) {
+    return (
+      authenticatedUser.role === 'ADMIN' ||
+      task.userId === authenticatedUser.userId ||
+      task.responsibleId === authenticatedUser.userId
+    );
+  }
+
+  private isStatusTransitionAllowed(
+    currentStatus: (typeof taskStatusValues)[number],
+    nextStatus: (typeof taskStatusValues)[number],
+  ) {
+    return allowedTaskStatusTransitions[currentStatus].includes(nextStatus);
+  }
+
+  private buildTaskStatusUpdatePayload(
+    startedAt: Date | null,
+    status: (typeof taskStatusValues)[number],
+    now: Date,
+  ) {
+    const updatedPayload = {
+      status,
+      updatedAt: now,
+      startedAt,
+      completedAt: null as Date | null,
+      completionTime: null as number | null,
+    };
+
+    if (status === 'IN_PROGRESS' && !startedAt) {
+      updatedPayload.startedAt = now;
+    }
+
+    if (status === 'DONE') {
+      updatedPayload.completedAt = now;
+      updatedPayload.completionTime = startedAt
+        ? Math.floor((now.getTime() - startedAt.getTime()) / 1000)
+        : null;
+    }
+
+    return updatedPayload;
   }
 }

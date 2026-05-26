@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import {
@@ -6,6 +16,7 @@ import {
   ApiNotFound,
   ApiOperationWithDescription,
   ApiServerErrorResponse,
+  ApiUuidParam,
   ApiValidationError,
   ForbiddenSwagger,
 } from '@/common/swagger';
@@ -14,6 +25,7 @@ import type { RequestWithUser } from '@/modules/auth/types/authenticated-user';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { FindTasksDto } from './dto/find-tasks.dto';
 import { TaskResponseDto } from './dto/task-response.dto';
+import { UpdateTaskStatusDto } from './dto/update-task-status.dto';
 import { tasksDocumentation } from './tasks.documentation';
 import { TasksService } from './tasks.service';
 
@@ -57,5 +69,36 @@ export class TasksController {
   @ApiServerErrorResponse()
   findAll(@Req() request: RequestWithUser, @Query() query: FindTasksDto) {
     return this.tasksService.findAll(request.user, query);
+  }
+
+  @Patch(':id/status')
+  @ApiAuthenticated()
+  @ApiOperationWithDescription(tasksDocumentation.updateStatus)
+  @ApiUuidParam('id', tasksDocumentation.updateStatus.uuidParamDescription)
+  @ApiResponse({
+    status: 200,
+    description: tasksDocumentation.updateStatus.successDescription,
+    type: TaskResponseDto,
+  })
+  @ApiValidationError(
+    tasksDocumentation.updateStatus.validationErrorDescription,
+  )
+  @ApiResponse({
+    status: 403,
+    description: tasksDocumentation.updateStatus.forbiddenDescription,
+    type: ForbiddenSwagger,
+  })
+  @ApiNotFound(tasksDocumentation.updateStatus.notFoundDescription)
+  @ApiServerErrorResponse()
+  updateStatus(
+    @Req() request: RequestWithUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() updateTaskStatusDto: UpdateTaskStatusDto,
+  ) {
+    return this.tasksService.updateStatus(
+      request.user,
+      id,
+      updateTaskStatusDto,
+    );
   }
 }
