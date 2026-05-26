@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 import { swaggerExamples } from '@/common/swagger/swagger-examples';
+import { TaskResponseDto } from '@/modules/tasks/dto/task-response.dto';
 
 export class UserResponseDto {
   @ApiProperty({
@@ -20,12 +21,26 @@ export class UserResponseDto {
   email: string;
 }
 
+export class UserWithTasksResponseDto extends UserResponseDto {
+  @ApiProperty({
+    type: [TaskResponseDto],
+  })
+  tasks: TaskResponseDto[];
+}
+
 export class UserWithRoleResponseDto extends UserResponseDto {
   @ApiProperty({
     example: swaggerExamples.user.role,
     enum: ['USER', 'ADMIN'],
   })
   role: 'USER' | 'ADMIN';
+}
+
+export class UserWithRoleAndTasksResponseDto extends UserWithRoleResponseDto {
+  @ApiProperty({
+    type: [TaskResponseDto],
+  })
+  tasks: TaskResponseDto[];
 }
 
 export class DeleteUserResponseDto {

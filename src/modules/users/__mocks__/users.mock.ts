@@ -52,6 +52,28 @@ export const mockUser = {
   email: 'john@example.com',
 };
 
+export const mockUserTask = {
+  id: '8f0506ab-70d3-4aab-bec9-6bd22fba8a70',
+  title: 'Preparar documentação da API',
+  description: 'Consolidar os endpoints do módulo de tarefas.',
+  tags: ['backend', 'documentacao'],
+  status: 'PENDING' as const,
+  createdBy: 'John Doe',
+  userId: mockUserId,
+  responsibleId: null,
+};
+
+export const mockSecondUserTask = {
+  id: '9f0506ab-70d3-4aab-bec9-6bd22fba8a71',
+  title: 'Revisar payloads',
+  description: null,
+  tags: ['review'],
+  status: 'IN_PROGRESS' as const,
+  createdBy: 'Jane Doe',
+  userId: '7f0506ab-70d3-4aab-bec9-6bd22fba8a69',
+  responsibleId: mockUserId,
+};
+
 export const mockUserWithStatus = {
   ...mockUser,
   status: 'ACTIVE' as const,
@@ -67,6 +89,16 @@ export const mockInactiveUserWithStatus = {
 export const mockUserWithRole = {
   ...mockUser,
   role: 'USER' as const,
+};
+
+export const mockUserWithTasks = {
+  ...mockUser,
+  tasks: [mockUserTask],
+};
+
+export const mockUserWithRoleAndTasks = {
+  ...mockUserWithRole,
+  tasks: [mockUserTask],
 };
 
 export const mockUserWithStatusAndRole = {
@@ -93,6 +125,16 @@ export const mockUsersList = [
     id: '7f0506ab-70d3-4aab-bec9-6bd22fba8a69',
     name: 'Jane Doe',
     email: 'jane@example.com',
+  },
+];
+
+export const mockUsersListWithTasks = [
+  mockUserWithTasks,
+  {
+    id: '7f0506ab-70d3-4aab-bec9-6bd22fba8a69',
+    name: 'Jane Doe',
+    email: 'jane@example.com',
+    tasks: [mockSecondUserTask],
   },
 ];
 

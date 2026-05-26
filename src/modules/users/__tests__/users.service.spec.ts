@@ -17,14 +17,19 @@ import {
   mockInvalidCreateUserDto,
   mockInvalidUpdateNameUserDto,
   mockMissingUserId,
+  mockSecondUserTask,
   mockUpdatedStatusResponse,
   mockUpdateNameUserDto,
   mockUser,
   mockUserAuthResponse,
+  mockUserTask,
   mockUsersList,
+  mockUsersListWithTasks,
   mockUserWithRole,
+  mockUserWithRoleAndTasks,
   mockUserWithStatus,
   mockUserWithStatusAndRole,
+  mockUserWithTasks,
 } from '@/modules/users/__mocks__/users.mock';
 
 import { UsersService } from '../users.service';
@@ -77,6 +82,9 @@ const findAuthByEmailNotFoundScenarios: [string, AuthUserRecord | undefined][] =
 
 type MockDb = {
   query: {
+    tasks: {
+      findMany: jest.Mock;
+    };
     users: {
       findFirst: jest.Mock;
       findMany: jest.Mock;
@@ -111,6 +119,9 @@ describe('UsersService', () => {
 
     db = {
       query: {
+        tasks: {
+          findMany: jest.fn(),
+        },
         users: {
           findFirst: jest.fn(),
           findMany: jest.fn(),
@@ -186,30 +197,38 @@ describe('UsersService', () => {
 
   it('should return active users on findAll', async () => {
     db.query.users.findMany.mockResolvedValue(mockUsersList);
+    db.query.tasks.findMany.mockResolvedValue([mockUserTask, mockSecondUserTask]);
 
-    await expect(service.findAll()).resolves.toEqual(mockUsersList);
+    await expect(service.findAll()).resolves.toEqual(mockUsersListWithTasks);
 
     expect(db.query.users.findMany.mock.calls).toHaveLength(1);
+    expect(db.query.tasks.findMany.mock.calls).toHaveLength(1);
   });
 
   it('should return user by id', async () => {
     db.query.users.findFirst.mockResolvedValue(mockUserWithStatus);
+    db.query.tasks.findMany.mockResolvedValue([mockUserTask]);
 
-    await expect(service.findById(mockUser.id)).resolves.toEqual(mockUser);
+    await expect(service.findById(mockUser.id)).resolves.toEqual(
+      mockUserWithTasks,
+    );
 
     expect(db.query.users.findFirst.mock.calls).toHaveLength(1);
+    expect(db.query.tasks.findMany.mock.calls).toHaveLength(1);
   });
 
   it('should return user by id with role when requested', async () => {
     db.query.users.findFirst
       .mockResolvedValueOnce(mockUserWithStatus)
       .mockResolvedValueOnce(mockUserWithStatusAndRole);
+    db.query.tasks.findMany.mockResolvedValue([mockUserTask]);
 
     await expect(
       service.findById(mockUser.id, { includeRole: true }),
-    ).resolves.toEqual(mockUserWithRole);
+    ).resolves.toEqual(mockUserWithRoleAndTasks);
 
     expect(db.query.users.findFirst.mock.calls).toHaveLength(2);
+    expect(db.query.tasks.findMany.mock.calls).toHaveLength(1);
   });
 
   it.each(findByIdNotFoundScenarios)(
@@ -237,10 +256,11 @@ describe('UsersService', () => {
 
   it('should return user by email', async () => {
     db.query.users.findFirst.mockResolvedValue(mockUserWithStatus);
+    db.query.tasks.findMany.mockResolvedValue([mockUserTask]);
 
     await expect(
       service.findByEmail(mockFindUserByEmailDto.email),
-    ).resolves.toEqual(mockUser);
+    ).resolves.toEqual(mockUserWithTasks);
   });
 
   it.each(findByEmailNotFoundScenarios)(
@@ -258,12 +278,14 @@ describe('UsersService', () => {
 
   it('should return users by name', async () => {
     db.query.users.findMany.mockResolvedValue(mockUsersList);
+    db.query.tasks.findMany.mockResolvedValue([mockUserTask, mockSecondUserTask]);
 
     await expect(service.findByName(mockFindUserByName)).resolves.toEqual(
-      mockUsersList,
+      mockUsersListWithTasks,
     );
 
     expect(db.query.users.findMany.mock.calls).toHaveLength(1);
+    expect(db.query.tasks.findMany.mock.calls).toHaveLength(1);
   });
 
   it('should reject findByName when no active users are found', async () => {

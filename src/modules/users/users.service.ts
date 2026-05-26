@@ -5,12 +5,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { and, eq, ilike } from 'drizzle-orm';
+import { and, desc, eq, ilike, inArray } from 'drizzle-orm';
 
 import { messages } from '@/common/messages';
 import { DATABASE_TOKEN } from '@/database/database.provider';
 import type { DrizzleClient } from '@/database/drizzle.client';
-import { users } from '@/database/schema';
+import { tasks, users } from '@/database/schema';
 import type { UserRole } from '@/database/schema/users.schema';
 
 import type { CreateUserDto } from './dto/create-user.dto';
@@ -27,6 +27,23 @@ type UserResponse = {
   id: string;
   name: string;
   email: string;
+};
+
+type UserTaskResponse = {
+  id: string;
+  title: string;
+  description: string | null;
+  tags: string[];
+  status:
+    | 'PENDING'
+    | 'IN_PROGRESS'
+    | 'PAUSED'
+    | 'BLOCKED'
+    | 'DONE'
+    | 'CANCELLED';
+  createdBy: string;
+  userId: string;
+  responsibleId: string | null;
 };
 
 type DeleteUserResponse = {
@@ -60,8 +77,16 @@ type UserWithRole = UserResponse & {
   role: UserRole;
 };
 
+type UserWithTasks = UserResponse & {
+  tasks: UserTaskResponse[];
+};
+
 type UserWithStatusAndRole = UserWithRole & {
   status: 'ACTIVE' | 'INACTIVE';
+};
+
+type UserWithRoleAndTasks = UserWithRole & {
+  tasks: UserTaskResponse[];
 };
 
 const userPublicColumns = {
@@ -73,6 +98,17 @@ const userPublicColumns = {
 const userDeleteColumns = {
   id: users.id,
 };
+
+const userTaskColumns = {
+  id: true,
+  title: true,
+  description: true,
+  tags: true,
+  status: true,
+  createdBy: true,
+  userId: true,
+  responsibleId: true,
+} as const;
 
 @Injectable()
 export class UsersService {
@@ -106,8 +142,8 @@ export class UsersService {
     return newUser;
   }
 
-  async findAll(): Promise<UserResponse[]> {
-    return this.db.query.users.findMany({
+  async findAll(): Promise<UserWithTasks[]> {
+    const activeUsers = await this.db.query.users.findMany({
       columns: {
         id: true,
         name: true,
@@ -115,17 +151,22 @@ export class UsersService {
       },
       where: eq(users.status, 'ACTIVE'),
     });
+
+    return this.attachTasksToUsers(activeUsers);
   }
 
   async findById(
     id: string,
     options: { includeRole: true },
-  ): Promise<UserWithRole>;
-  async findById(id: string, options?: FindByIdOptions): Promise<UserResponse>;
+  ): Promise<UserWithRoleAndTasks>;
   async findById(
     id: string,
     options?: FindByIdOptions,
-  ): Promise<UserResponse | UserWithRole> {
+  ): Promise<UserWithTasks>;
+  async findById(
+    id: string,
+    options?: FindByIdOptions,
+  ): Promise<UserWithTasks | UserWithRoleAndTasks> {
     const user = await this.findUserByIdWithStatus(id);
 
     if (!user || user.status === 'INACTIVE') {
@@ -139,13 +180,13 @@ export class UsersService {
         throw new NotFoundException(messages.user.notFound);
       }
 
-      return this.toUserWithRoleResponse(userWithRole);
+      return this.attachTasksToUser(this.toUserWithRoleResponse(userWithRole));
     }
 
-    return this.toUserResponse(user);
+    return this.attachTasksToUser(this.toUserResponse(user));
   }
 
-  async findByEmail(email: string): Promise<UserResponse> {
+  async findByEmail(email: string): Promise<UserWithTasks> {
     const user = await this.db.query.users.findFirst({
       columns: {
         id: true,
@@ -160,10 +201,10 @@ export class UsersService {
       throw new NotFoundException(messages.user.notFound);
     }
 
-    return this.toUserResponse(user);
+    return this.attachTasksToUser(this.toUserResponse(user));
   }
 
-  async findByName(name: string): Promise<UserResponse[]> {
+  async findByName(name: string): Promise<UserWithTasks[]> {
     const data = findUserByNameSchema.parse({ name });
 
     const foundUsers = await this.db.query.users.findMany({
@@ -182,7 +223,7 @@ export class UsersService {
       throw new NotFoundException(messages.user.notFound);
     }
 
-    return foundUsers;
+    return this.attachTasksToUsers(foundUsers);
   }
 
   async findAuthUserByEmail(email: string): Promise<UserAuthResponse> {
@@ -225,7 +266,11 @@ export class UsersService {
   }
 
   async delete(id: string): Promise<DeleteUserResponse> {
-    await this.findById(id);
+    const user = await this.findUserByIdWithStatus(id);
+
+    if (!user || user.status === 'INACTIVE') {
+      throw new NotFoundException(messages.user.notFound);
+    }
 
     const data = deleteUserSchema.parse({
       status: 'INACTIVE',
@@ -251,23 +296,17 @@ export class UsersService {
   }
 
   async updateStatus(id: string): Promise<UpdateUserStatusResponse> {
-    try {
-      const user = await this.findById(id);
-
-      return {
-        id: user.id,
-        message: messages.user.alreadyActive,
-      };
-    } catch (error) {
-      if (!(error instanceof NotFoundException)) {
-        throw error;
-      }
-    }
-
     const user = await this.findUserByIdWithStatus(id);
 
     if (!user) {
       throw new NotFoundException(messages.user.notFound);
+    }
+
+    if (user.status === 'ACTIVE') {
+      return {
+        id: user.id,
+        message: messages.user.alreadyActive,
+      };
     }
 
     const status = userStatusSchema.parse('ACTIVE');
@@ -306,6 +345,49 @@ export class UsersService {
       email: user.email,
       role: user.role,
     };
+  }
+
+  private async attachTasksToUser<T extends { id: string }>(
+    user: T,
+  ): Promise<T & { tasks: UserTaskResponse[] }> {
+    const createdTasks = await this.db.query.tasks.findMany({
+      columns: userTaskColumns,
+      where: eq(tasks.userId, user.id),
+      orderBy: [desc(tasks.createdAt)],
+    });
+
+    return {
+      ...user,
+      tasks: createdTasks,
+    };
+  }
+
+  private async attachTasksToUsers<T extends { id: string }>(
+    foundUsers: T[],
+  ): Promise<Array<T & { tasks: UserTaskResponse[] }>> {
+    if (foundUsers.length === 0) {
+      return [];
+    }
+
+    const userIds = foundUsers.map((user) => user.id);
+    const createdTasks = await this.db.query.tasks.findMany({
+      columns: userTaskColumns,
+      where: inArray(tasks.userId, userIds),
+      orderBy: [desc(tasks.createdAt)],
+    });
+
+    const tasksByUserId = new Map<string, UserTaskResponse[]>();
+
+    for (const task of createdTasks) {
+      const tasksForUser = tasksByUserId.get(task.userId) ?? [];
+      tasksForUser.push(task);
+      tasksByUserId.set(task.userId, tasksForUser);
+    }
+
+    return foundUsers.map((user) => ({
+      ...user,
+      tasks: tasksByUserId.get(user.id) ?? [],
+    }));
   }
 
   private findUserByIdWithStatus(

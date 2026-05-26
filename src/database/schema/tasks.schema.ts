@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm';
 import {
   integer,
   pgEnum,
@@ -51,6 +52,19 @@ export const tasks = pgTable('tasks', {
 
   completionTime: integer('completion_time'),
 });
+
+export const tasksRelations = relations(tasks, ({ one }) => ({
+  user: one(users, {
+    fields: [tasks.userId],
+    references: [users.id],
+    relationName: 'taskOwner',
+  }),
+  responsible: one(users, {
+    fields: [tasks.responsibleId],
+    references: [users.id],
+    relationName: 'taskResponsible',
+  }),
+}));
 
 export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;

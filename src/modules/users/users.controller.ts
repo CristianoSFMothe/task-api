@@ -33,6 +33,7 @@ import {
   DeleteUserResponseDto,
   UpdateUserStatusResponseDto,
   UserResponseDto,
+  UserWithTasksResponseDto,
 } from './dto/user-response.dto';
 import { usersDocumentation } from './users.documentation';
 import { UsersService } from './users.service';
@@ -49,7 +50,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: usersDocumentation.findAll.successDescription,
-    type: UserResponseDto,
+    type: UserWithTasksResponseDto,
     isArray: true,
   })
   @ApiAdminAccess()
@@ -64,7 +65,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: usersDocumentation.findByEmail.successDescription,
-    type: UserResponseDto,
+    type: UserWithTasksResponseDto,
   })
   @ApiValidationError()
   @ApiNotFound()
@@ -79,7 +80,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: usersDocumentation.findByName.successDescription,
-    type: UserResponseDto,
+    type: UserWithTasksResponseDto,
     isArray: true,
   })
   @ApiValidationError()
@@ -95,7 +96,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: usersDocumentation.findMe.successDescription,
-    type: UserResponseDto,
+    type: UserWithTasksResponseDto,
   })
   @ApiServerErrorResponse()
   findMe(@Req() request: RequestWithUser) {

@@ -1,3 +1,29 @@
+type OperationDocumentation = {
+  summary: string;
+  description: string;
+  successDescription: string;
+};
+
+type OperationDocumentationWithUuid = OperationDocumentation & {
+  uuidParamDescription: string;
+  validationErrorDescription: string;
+};
+
+type CreateUserDocumentation = OperationDocumentation & {
+  conflictDescription: string;
+};
+
+type UsersDocumentation = {
+  findAll: OperationDocumentation;
+  findByEmail: OperationDocumentation;
+  findByName: OperationDocumentation;
+  findMe: OperationDocumentation;
+  updateMyName: OperationDocumentation;
+  updateStatus: OperationDocumentationWithUuid;
+  delete: OperationDocumentationWithUuid;
+  create: CreateUserDocumentation;
+};
+
 export const usersDocumentation = {
   findAll: {
     summary: 'Listar os usuários ativos',
@@ -52,4 +78,6 @@ export const usersDocumentation = {
     successDescription: 'Usuário adicionado com sucesso',
     conflictDescription: 'Email já cadastrado',
   },
-} as const;
+} as const satisfies UsersDocumentation;
+
+export type { UsersDocumentation };
