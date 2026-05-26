@@ -42,6 +42,13 @@ type DeleteTaskResponse = {
   message: string;
 };
 
+type UpdateTaskPayload = {
+  title?: string;
+  description?: string | null;
+  tags?: string[];
+  responsibleId?: string | null;
+};
+
 const taskResponseColumns = {
   id: tasks.id,
   title: tasks.title,
@@ -214,7 +221,13 @@ export class TasksService {
     id: string,
     updateTaskDto: UpdateTaskDto,
   ): Promise<TaskResponse> {
-    const data = updateTaskSchema.parse(updateTaskDto);
+    const parsedUpdateTask = updateTaskSchema.safeParse(updateTaskDto);
+
+    if (!parsedUpdateTask.success) {
+      throw parsedUpdateTask.error;
+    }
+
+    const data: UpdateTaskPayload = parsedUpdateTask.data;
     const task = await this.db.query.tasks.findFirst({
       columns: taskUpdateLookupColumns,
       where: eq(tasks.id, id),
@@ -228,16 +241,14 @@ export class TasksService {
       throw new ForbiddenException(messages.task.updateForbidden);
     }
 
+    const resolvedResponsibleId =
+      data.responsibleId === undefined
+        ? undefined
+        : await this.resolveResponsibleIdForUpdate(data.responsibleId);
+
     const [updatedTask] = await this.db
       .update(tasks)
-      .set(
-        await this.buildTaskUpdatePayload(
-          data,
-          data.responsibleId === undefined
-            ? undefined
-            : await this.resolveResponsibleIdForUpdate(data.responsibleId),
-        ),
-      )
+      .set(this.buildTaskUpdatePayload(data, resolvedResponsibleId))
       .where(and(eq(tasks.id, id), eq(tasks.isActive, true)))
       .returning(taskResponseColumns);
 
@@ -466,12 +477,7 @@ export class TasksService {
   }
 
   private buildTaskUpdatePayload(
-    data: {
-      title?: string;
-      description?: string | null;
-      tags?: string[];
-      responsibleId?: string | null;
-    },
+    { title, description, tags, responsibleId }: UpdateTaskPayload,
     resolvedResponsibleId?: string | null,
   ) {
     const payload: {
@@ -484,19 +490,19 @@ export class TasksService {
       updatedAt: new Date(),
     };
 
-    if (data.title !== undefined) {
-      payload.title = data.title;
+    if (title !== undefined) {
+      payload.title = title;
     }
 
-    if (data.description !== undefined) {
-      payload.description = data.description;
+    if (description !== undefined) {
+      payload.description = description;
     }
 
-    if (data.tags !== undefined) {
-      payload.tags = data.tags;
+    if (tags !== undefined) {
+      payload.tags = tags;
     }
 
-    if (data.responsibleId !== undefined) {
+    if (responsibleId !== undefined) {
       payload.responsibleId = resolvedResponsibleId ?? null;
     }
 
