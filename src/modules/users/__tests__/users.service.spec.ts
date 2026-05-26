@@ -10,9 +10,8 @@ import {
   mockCreateUserDtoWithNormalization,
   mockDeletedUserResponse,
   mockEmptySearchUsersDto,
-  mockFindUserByEmailDto,
   mockFindUserByName,
-  mockFindUserByNameDtoWithNormalization,
+  mockFindUserByNameWithNormalization,
   mockInactiveUserId,
   mockInactiveUserWithStatus,
   mockInactiveUserWithStatusAndRole,
@@ -310,9 +309,9 @@ describe('UsersService', () => {
     db.query.users.findFirst.mockResolvedValue(mockUserWithStatus);
     db.query.tasks.findMany.mockResolvedValue([mockUserTask]);
 
-    await expect(
-      service.findByEmail(mockFindUserByEmailDto.email),
-    ).resolves.toEqual(mockUserWithTasks);
+    await expect(service.findByEmail(mockUser.email)).resolves.toEqual(
+      mockUserWithTasks,
+    );
   });
 
   it.each(findByEmailNotFoundScenarios)(
@@ -320,9 +319,7 @@ describe('UsersService', () => {
     async (_, userRecord) => {
       db.query.users.findFirst.mockResolvedValue(userRecord);
 
-      await expect(
-        service.findByEmail(mockFindUserByEmailDto.email),
-      ).rejects.toMatchObject({
+      await expect(service.findByEmail(mockUser.email)).rejects.toMatchObject({
         message: messages.user.notFound,
       });
     },
@@ -332,9 +329,9 @@ describe('UsersService', () => {
     db.query.users.findFirst.mockResolvedValue(mockUserWithStatus);
     db.query.tasks.findMany.mockResolvedValue([]);
 
-    await expect(
-      service.findByEmail(mockFindUserByEmailDto.email),
-    ).resolves.toEqual(mockUserWithNoTasks);
+    await expect(service.findByEmail(mockUser.email)).resolves.toEqual(
+      mockUserWithNoTasks,
+    );
   });
 
   it('should search users by email', async () => {
@@ -428,7 +425,7 @@ describe('UsersService', () => {
     ]);
 
     await expect(
-      service.findByName(mockFindUserByNameDtoWithNormalization.name),
+      service.findByName(mockFindUserByNameWithNormalization),
     ).resolves.toEqual(mockUsersListWithTasks);
 
     expect(db.query.users.findMany).toHaveBeenCalledTimes(1);
@@ -444,9 +441,9 @@ describe('UsersService', () => {
   it('should return auth user by email', async () => {
     db.query.users.findFirst.mockResolvedValue(mockUserAuthResponse);
 
-    await expect(
-      service.findAuthUserByEmail(mockFindUserByEmailDto.email),
-    ).resolves.toEqual(mockUserAuthResponse);
+    await expect(service.findAuthUserByEmail(mockUser.email)).resolves.toEqual(
+      mockUserAuthResponse,
+    );
   });
 
   it.each(findAuthByEmailNotFoundScenarios)(
@@ -455,7 +452,7 @@ describe('UsersService', () => {
       db.query.users.findFirst.mockResolvedValue(userRecord);
 
       await expect(
-        service.findAuthUserByEmail(mockFindUserByEmailDto.email),
+        service.findAuthUserByEmail(mockUser.email),
       ).rejects.toMatchObject({
         message: messages.user.notFound,
       });

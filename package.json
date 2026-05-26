@@ -94,7 +94,20 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "**/*.(t|j)s",
+      "!main.ts",
+      "!app/**",
+      "!app.module.ts",
+      "!database/**",
+      "!database.module.ts",
+      "!modules/auth/auth.module.ts",
+      "!modules/auth/guard/**",
+      "!modules/auth/strategy/**",
+      "!modules/auth/guard/jwt-auth.guard.ts",
+      "!modules/auth/guard/roles.guard.ts",
+      "!modules/auth/strategy/jwt.strategy.ts",
+      "!modules/tasks/tasks.module.ts",
+      "!modules/users/users.module.ts"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
