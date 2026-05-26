@@ -11,10 +11,13 @@ import {
   mockCreateTaskDto,
   mockCreateTaskDtoWithNormalization,
   mockCreateTaskForOtherUserDto,
+  mockCreateTaskWithAuthenticatedUserAsResponsibleDto,
   mockCreateTaskWithResponsibleDto,
+  mockCreateTaskWithTaskOwnerAsResponsibleDto,
   mockFindTasksDto,
   mockFindTasksDtoWithNormalization,
   mockInvalidCreateTaskDto,
+  mockInvalidFindTasksDto,
 } from '@/modules/tasks/__mocks__/tasks.mock';
 import { UsersService } from '@/modules/users/users.service';
 
@@ -181,6 +184,68 @@ describe('TasksService', () => {
     });
   });
 
+  it('should reuse task owner as responsible when responsible email matches task owner', async () => {
+    usersService.findByEmail.mockResolvedValueOnce({
+      id: '7f0506ab-70d3-4aab-bec9-6bd22fba8a69',
+      name: 'Jane Doe',
+      email: 'jane@example.com',
+    });
+    insertReturningMock.mockResolvedValue([mockCreatedTaskForOtherUser]);
+
+    await expect(
+      service.create(
+        mockAdminTaskRequest.user,
+        mockCreateTaskWithTaskOwnerAsResponsibleDto,
+      ),
+    ).resolves.toEqual(mockCreatedTaskForOtherUser);
+
+    expect(usersService.findByEmail).toHaveBeenCalledTimes(1);
+    expect(usersService.findByEmail).toHaveBeenCalledWith('jane@example.com');
+    expect(insertValuesMock).toHaveBeenCalledWith({
+      title: 'Delegar revisão',
+      description: null,
+      tags: [],
+      createdBy: 'Admin User',
+      userId: '7f0506ab-70d3-4aab-bec9-6bd22fba8a69',
+      responsibleId: '7f0506ab-70d3-4aab-bec9-6bd22fba8a69',
+    });
+  });
+
+  it('should reuse authenticated user as responsible when responsible email matches requester', async () => {
+    usersService.findByEmail.mockResolvedValueOnce({
+      id: '7f0506ab-70d3-4aab-bec9-6bd22fba8a69',
+      name: 'Jane Doe',
+      email: 'jane@example.com',
+    });
+    insertReturningMock.mockResolvedValue([
+      {
+        ...mockCreatedTaskForOtherUser,
+        responsibleId: mockAdminTaskRequest.user.userId,
+      },
+    ]);
+
+    await expect(
+      service.create(
+        mockAdminTaskRequest.user,
+        mockCreateTaskWithAuthenticatedUserAsResponsibleDto,
+      ),
+    ).resolves.toEqual({
+      ...mockCreatedTaskForOtherUser,
+      responsibleId: mockAdminTaskRequest.user.userId,
+    });
+
+    expect(usersService.findByEmail).toHaveBeenCalledTimes(1);
+    expect(usersService.findByEmail).toHaveBeenCalledWith('jane@example.com');
+    expect(insertValuesMock).toHaveBeenCalledWith({
+      title: 'Delegar revisão',
+      description: null,
+      tags: [],
+      createdBy: 'Admin User',
+      userId: '7f0506ab-70d3-4aab-bec9-6bd22fba8a69',
+      responsibleId: mockAdminTaskRequest.user.userId,
+    });
+  });
+
   it('should return all tasks for admin users', async () => {
     db.query.tasks.findMany.mockResolvedValue([
       mockCreatedTask,
@@ -192,7 +257,14 @@ describe('TasksService', () => {
       mockCreatedTaskForOtherUser,
     ]);
 
+    const [queryArgs] = db.query.tasks.findMany.mock.calls[0] as [
+      {
+        where?: unknown;
+      },
+    ];
+
     expect(db.query.tasks.findMany).toHaveBeenCalledTimes(1);
+    expect(queryArgs.where).toBeUndefined();
   });
 
   it('should apply optional filters when listing tasks', async () => {
@@ -232,6 +304,17 @@ describe('TasksService', () => {
     ];
 
     expect(queryArgs.where).toBeDefined();
+  });
+
+  it('should reject findAll when filters are invalid', () => {
+    expect(() =>
+      service.findAll(
+        mockAuthenticatedTaskRequest.user,
+        mockInvalidFindTasksDto as never,
+      ),
+    ).toThrow(ZodError);
+
+    expect(db.query.tasks.findMany).not.toHaveBeenCalled();
   });
 
   it('should return only tasks visible to a regular user', async () => {

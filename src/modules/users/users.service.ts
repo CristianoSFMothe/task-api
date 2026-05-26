@@ -159,10 +159,7 @@ export class UsersService {
     id: string,
     options: { includeRole: true },
   ): Promise<UserWithRoleAndTasks>;
-  async findById(
-    id: string,
-    options?: FindByIdOptions,
-  ): Promise<UserWithTasks>;
+  async findById(id: string, options?: FindByIdOptions): Promise<UserWithTasks>;
   async findById(
     id: string,
     options?: FindByIdOptions,

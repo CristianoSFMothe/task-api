@@ -48,6 +48,19 @@ export const mockCreateTaskWithResponsibleDto: CreateTaskDto = {
   responsibleEmail: 'mary@example.com',
 };
 
+export const mockCreateTaskWithTaskOwnerAsResponsibleDto: CreateTaskDto = {
+  title: 'Delegar revisão',
+  userEmail: 'jane@example.com',
+  responsibleEmail: 'jane@example.com',
+};
+
+export const mockCreateTaskWithAuthenticatedUserAsResponsibleDto: CreateTaskDto =
+  {
+    title: 'Delegar revisão',
+    userEmail: 'jane@example.com',
+    responsibleEmail: 'admin@example.com',
+  };
+
 export const mockInvalidCreateTaskDto: CreateTaskDto = {
   title: '   ',
   responsibleEmail: 'invalid-email',
@@ -63,6 +76,11 @@ export const mockFindTasksDto: FindTasksDto = {
 export const mockFindTasksDtoWithNormalization: FindTasksDto = {
   title: '  documentação  ',
   tag: ' backend ',
+};
+
+export const mockInvalidFindTasksDto = {
+  responsibleId: 'invalid-uuid',
+  status: 'INVALID_STATUS',
 };
 
 export const mockCreatedTask = {

@@ -49,6 +49,16 @@ describe('TasksController', () => {
     );
   });
 
+  it('should propagate create errors from service', async () => {
+    const error = new Error('create failed');
+
+    tasksService.create.mockRejectedValue(error);
+
+    await expect(
+      controller.create(mockAuthenticatedTaskRequest, mockCreateTaskDto),
+    ).rejects.toBe(error);
+  });
+
   it('should delegate findAll with authenticated user', async () => {
     tasksService.findAll.mockResolvedValue([{ id: 'task-id' }]);
 
@@ -60,5 +70,15 @@ describe('TasksController', () => {
       mockAuthenticatedTaskRequest.user,
       mockFindTasksDto,
     );
+  });
+
+  it('should propagate findAll errors from service', async () => {
+    const error = new Error('list failed');
+
+    tasksService.findAll.mockRejectedValue(error);
+
+    await expect(
+      controller.findAll(mockAuthenticatedTaskRequest, mockFindTasksDto),
+    ).rejects.toBe(error);
   });
 });

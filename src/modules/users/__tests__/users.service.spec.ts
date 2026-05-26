@@ -11,6 +11,7 @@ import {
   mockDeletedUserResponse,
   mockFindUserByEmailDto,
   mockFindUserByName,
+  mockFindUserByNameDtoWithNormalization,
   mockInactiveUserId,
   mockInactiveUserWithStatus,
   mockInactiveUserWithStatusAndRole,
@@ -20,12 +21,13 @@ import {
   mockSecondUserTask,
   mockUpdatedStatusResponse,
   mockUpdateNameUserDto,
+  mockUpdateNameUserDtoWithNormalization,
   mockUser,
   mockUserAuthResponse,
-  mockUserTask,
   mockUsersList,
   mockUsersListWithTasks,
-  mockUserWithRole,
+  mockUserTask,
+  mockUserWithNoTasks,
   mockUserWithRoleAndTasks,
   mockUserWithStatus,
   mockUserWithStatusAndRole,
@@ -197,12 +199,36 @@ describe('UsersService', () => {
 
   it('should return active users on findAll', async () => {
     db.query.users.findMany.mockResolvedValue(mockUsersList);
-    db.query.tasks.findMany.mockResolvedValue([mockUserTask, mockSecondUserTask]);
+    db.query.tasks.findMany.mockResolvedValue([
+      mockUserTask,
+      mockSecondUserTask,
+    ]);
 
     await expect(service.findAll()).resolves.toEqual(mockUsersListWithTasks);
 
     expect(db.query.users.findMany.mock.calls).toHaveLength(1);
     expect(db.query.tasks.findMany.mock.calls).toHaveLength(1);
+  });
+
+  it('should attach an empty task list for active users without created tasks', async () => {
+    db.query.users.findMany.mockResolvedValue(mockUsersList);
+    db.query.tasks.findMany.mockResolvedValue([mockUserTask]);
+
+    await expect(service.findAll()).resolves.toEqual([
+      mockUserWithTasks,
+      {
+        ...mockUsersList[1],
+        tasks: [],
+      },
+    ]);
+  });
+
+  it('should return an empty array on findAll when there are no active users', async () => {
+    db.query.users.findMany.mockResolvedValue([]);
+
+    await expect(service.findAll()).resolves.toEqual([]);
+
+    expect(db.query.tasks.findMany).not.toHaveBeenCalled();
   });
 
   it('should return user by id', async () => {
@@ -215,6 +241,15 @@ describe('UsersService', () => {
 
     expect(db.query.users.findFirst.mock.calls).toHaveLength(1);
     expect(db.query.tasks.findMany.mock.calls).toHaveLength(1);
+  });
+
+  it('should return user by id even when there are no tasks', async () => {
+    db.query.users.findFirst.mockResolvedValue(mockUserWithStatus);
+    db.query.tasks.findMany.mockResolvedValue([]);
+
+    await expect(service.findById(mockUser.id)).resolves.toEqual(
+      mockUserWithNoTasks,
+    );
   });
 
   it('should return user by id with role when requested', async () => {
@@ -254,6 +289,18 @@ describe('UsersService', () => {
     });
   });
 
+  it('should reject findById with role when role lookup is missing', async () => {
+    db.query.users.findFirst
+      .mockResolvedValueOnce(mockUserWithStatus)
+      .mockResolvedValueOnce(undefined);
+
+    await expect(
+      service.findById(mockUser.id, { includeRole: true }),
+    ).rejects.toMatchObject({
+      message: messages.user.notFound,
+    });
+  });
+
   it('should return user by email', async () => {
     db.query.users.findFirst.mockResolvedValue(mockUserWithStatus);
     db.query.tasks.findMany.mockResolvedValue([mockUserTask]);
@@ -276,9 +323,21 @@ describe('UsersService', () => {
     },
   );
 
+  it('should return user by email even when no tasks are found', async () => {
+    db.query.users.findFirst.mockResolvedValue(mockUserWithStatus);
+    db.query.tasks.findMany.mockResolvedValue([]);
+
+    await expect(
+      service.findByEmail(mockFindUserByEmailDto.email),
+    ).resolves.toEqual(mockUserWithNoTasks);
+  });
+
   it('should return users by name', async () => {
     db.query.users.findMany.mockResolvedValue(mockUsersList);
-    db.query.tasks.findMany.mockResolvedValue([mockUserTask, mockSecondUserTask]);
+    db.query.tasks.findMany.mockResolvedValue([
+      mockUserTask,
+      mockSecondUserTask,
+    ]);
 
     await expect(service.findByName(mockFindUserByName)).resolves.toEqual(
       mockUsersListWithTasks,
@@ -294,6 +353,27 @@ describe('UsersService', () => {
     await expect(service.findByName(mockFindUserByName)).rejects.toMatchObject({
       message: messages.user.notFound,
     });
+  });
+
+  it('should normalize name before searching on findByName', async () => {
+    db.query.users.findMany.mockResolvedValue(mockUsersList);
+    db.query.tasks.findMany.mockResolvedValue([
+      mockUserTask,
+      mockSecondUserTask,
+    ]);
+
+    await expect(
+      service.findByName(mockFindUserByNameDtoWithNormalization.name),
+    ).resolves.toEqual(mockUsersListWithTasks);
+
+    expect(db.query.users.findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('should reject findByName when input is invalid', async () => {
+    await expect(service.findByName(' ')).rejects.toBeInstanceOf(ZodError);
+
+    expect(db.query.users.findMany).not.toHaveBeenCalled();
+    expect(db.query.tasks.findMany).not.toHaveBeenCalled();
   });
 
   it('should return auth user by email', async () => {
@@ -343,6 +423,32 @@ describe('UsersService', () => {
     expect(updatePayload.updatedAt).toBeInstanceOf(Date);
   });
 
+  it('should normalize user name before updating', async () => {
+    updateReturningMock.mockResolvedValue([
+      {
+        ...mockUser,
+        name: 'Johnny Doe',
+      },
+    ]);
+
+    await expect(
+      service.updateName(mockUser.id, mockUpdateNameUserDtoWithNormalization),
+    ).resolves.toEqual({
+      ...mockUser,
+      name: 'Johnny Doe',
+    });
+
+    const [updatePayload] = updateSetMock.mock.calls[0] as [
+      {
+        name: string;
+        updatedAt: Date;
+      },
+    ];
+
+    expect(updatePayload.name).toBe('Johnny Doe');
+    expect(updatePayload.updatedAt).toBeInstanceOf(Date);
+  });
+
   it('should reject updateName when dto is invalid', async () => {
     await expect(
       service.updateName(mockUser.id, mockInvalidUpdateNameUserDto),
@@ -384,6 +490,16 @@ describe('UsersService', () => {
     db.query.users.findFirst.mockResolvedValue(undefined);
 
     await expect(service.delete(mockMissingUserId)).rejects.toMatchObject({
+      message: messages.user.notFound,
+    });
+
+    expect(db.update.mock.calls).toHaveLength(0);
+  });
+
+  it('should reject delete when user is inactive', async () => {
+    db.query.users.findFirst.mockResolvedValue(mockInactiveUserWithStatus);
+
+    await expect(service.delete(mockInactiveUserId)).rejects.toMatchObject({
       message: messages.user.notFound,
     });
 

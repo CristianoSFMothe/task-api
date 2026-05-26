@@ -38,8 +38,16 @@ export const mockFindUserByNameDto: FindUserByNameDto = {
   name: 'John Doe',
 };
 
+export const mockFindUserByNameDtoWithNormalization: FindUserByNameDto = {
+  name: '  John Doe  ',
+};
+
 export const mockUpdateNameUserDto: UpdateNameUserDto = {
   name: 'Johnny Doe',
+};
+
+export const mockUpdateNameUserDtoWithNormalization: UpdateNameUserDto = {
+  name: '  Johnny Doe  ',
 };
 
 export const mockInvalidUpdateNameUserDto: UpdateNameUserDto = {
@@ -94,6 +102,11 @@ export const mockUserWithRole = {
 export const mockUserWithTasks = {
   ...mockUser,
   tasks: [mockUserTask],
+};
+
+export const mockUserWithNoTasks = {
+  ...mockUser,
+  tasks: [],
 };
 
 export const mockUserWithRoleAndTasks = {
