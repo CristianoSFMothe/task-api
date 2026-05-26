@@ -1,11 +1,11 @@
 meta {
-  name: SearchByName
+  name: Search
   type: http
-  seq: 5
+  seq: 3
 }
 
 get {
-  url: {{baseUrl}}/users/search?name={{userName}}
+  url: {{baseUrl}}/users/search?name={{userName}}&email={{email}}
   body: none
   auth: bearer
 }
