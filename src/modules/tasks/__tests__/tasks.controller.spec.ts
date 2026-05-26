@@ -5,6 +5,7 @@ import {
   mockCreateTaskDto,
   mockDeletedTaskResponse,
   mockFindTasksDto,
+  mockUpdateTaskDto,
   mockUpdateTaskStatusToInProgressDto,
 } from '@/modules/tasks/__mocks__/tasks.mock';
 
@@ -18,6 +19,7 @@ describe('TasksController', () => {
     delete: jest.Mock;
     findAll: jest.Mock;
     findById: jest.Mock;
+    update: jest.Mock;
     updateStatus: jest.Mock;
   };
 
@@ -27,6 +29,7 @@ describe('TasksController', () => {
       delete: jest.fn(),
       findAll: jest.fn(),
       findById: jest.fn(),
+      update: jest.fn(),
       updateStatus: jest.fn(),
     };
 
@@ -113,6 +116,38 @@ describe('TasksController', () => {
 
     await expect(
       controller.findById(mockAuthenticatedTaskRequest, 'task-id'),
+    ).rejects.toBe(error);
+  });
+
+  it('should delegate update with authenticated user', async () => {
+    tasksService.update.mockResolvedValue({ id: 'task-id' });
+
+    await expect(
+      controller.update(
+        mockAuthenticatedTaskRequest,
+        'task-id',
+        mockUpdateTaskDto,
+      ),
+    ).resolves.toEqual({ id: 'task-id' });
+
+    expect(tasksService.update).toHaveBeenCalledWith(
+      mockAuthenticatedTaskRequest.user,
+      'task-id',
+      mockUpdateTaskDto,
+    );
+  });
+
+  it('should propagate update errors from service', async () => {
+    const error = new Error('update task failed');
+
+    tasksService.update.mockRejectedValue(error);
+
+    await expect(
+      controller.update(
+        mockAuthenticatedTaskRequest,
+        'task-id',
+        mockUpdateTaskDto,
+      ),
     ).rejects.toBe(error);
   });
 

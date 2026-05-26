@@ -2,6 +2,7 @@ import type { RequestWithUser } from '@/modules/auth/types/authenticated-user';
 
 import type { CreateTaskDto } from '../dto/create-task.dto';
 import type { FindTasksDto } from '../dto/find-tasks.dto';
+import type { UpdateTaskDto } from '../dto/update-task.dto';
 import type { UpdateTaskStatusDto } from '../dto/update-task-status.dto';
 
 export const mockTaskId = '8f0506ab-70d3-4aab-bec9-6bd22fba8a70';
@@ -102,6 +103,21 @@ export const mockInvalidFindTasksDto = {
   status: 'INVALID_STATUS',
 };
 
+export const mockUpdateTaskDto: UpdateTaskDto = {
+  title: '  Atualizar documentação da API  ',
+  description: '   ',
+  tags: [' api ', 'backend'],
+  responsibleId: mockResponsibleId,
+};
+
+export const mockUpdateTaskDtoWithoutResponsible: UpdateTaskDto = {
+  responsibleId: null,
+};
+
+export const mockInvalidUpdateTaskDto = {
+  responsibleId: 'invalid-uuid',
+};
+
 export const mockUpdateTaskStatusToInProgressDto: UpdateTaskStatusDto = {
   status: 'IN_PROGRESS',
 };
@@ -158,6 +174,14 @@ export const mockPendingTaskRecord = {
   responsibleId: null,
   isActive: true,
   startedAt: null,
+};
+
+export const mockUpdatedTask = {
+  ...mockCreatedTask,
+  title: 'Atualizar documentação da API',
+  description: null,
+  tags: ['api', 'backend'],
+  responsibleId: mockResponsibleId,
 };
 
 export const mockInProgressTaskRecord = {

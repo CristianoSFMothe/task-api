@@ -29,6 +29,7 @@ import {
   DeleteTaskResponseDto,
   TaskResponseDto,
 } from './dto/task-response.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
 import { UpdateTaskStatusDto } from './dto/update-task-status.dto';
 import { tasksDocumentation } from './tasks.documentation';
 import { TasksService } from './tasks.service';
@@ -92,6 +93,31 @@ export class TasksController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ) {
     return this.tasksService.findById(request.user, id);
+  }
+
+  @Patch(':id')
+  @ApiAuthenticated()
+  @ApiOperationWithDescription(tasksDocumentation.update)
+  @ApiUuidParam('id', tasksDocumentation.update.uuidParamDescription)
+  @ApiResponse({
+    status: 200,
+    description: tasksDocumentation.update.successDescription,
+    type: TaskResponseDto,
+  })
+  @ApiValidationError(tasksDocumentation.update.validationErrorDescription)
+  @ApiResponse({
+    status: 403,
+    description: tasksDocumentation.update.forbiddenDescription,
+    type: ForbiddenSwagger,
+  })
+  @ApiNotFound(tasksDocumentation.update.notFoundDescription)
+  @ApiServerErrorResponse()
+  update(
+    @Req() request: RequestWithUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() updateTaskDto: UpdateTaskDto,
+  ) {
+    return this.tasksService.update(request.user, id, updateTaskDto);
   }
 
   @Patch(':id/status')

@@ -16,11 +16,13 @@ import { UsersService } from '@/modules/users/users.service';
 
 import type { CreateTaskDto } from './dto/create-task.dto';
 import type { FindTasksDto } from './dto/find-tasks.dto';
+import type { UpdateTaskDto } from './dto/update-task.dto';
 import type { UpdateTaskStatusDto } from './dto/update-task-status.dto';
 import {
   createTaskSchema,
   findTasksSchema,
   taskStatusValues,
+  updateTaskSchema,
   updateTaskStatusSchema,
 } from './schemas/task.schema';
 
@@ -69,6 +71,12 @@ const taskStatusUpdateColumns = {
   responsibleId: true,
   isActive: true,
   startedAt: true,
+} as const;
+
+const taskUpdateLookupColumns = {
+  id: true,
+  userId: true,
+  isActive: true,
 } as const;
 
 const taskDeleteLookupColumns = {
@@ -199,6 +207,45 @@ export class TasksService {
     }
 
     return task;
+  }
+
+  async update(
+    authenticatedUser: AuthenticatedUser,
+    id: string,
+    updateTaskDto: UpdateTaskDto,
+  ): Promise<TaskResponse> {
+    const data = updateTaskSchema.parse(updateTaskDto);
+    const task = await this.db.query.tasks.findFirst({
+      columns: taskUpdateLookupColumns,
+      where: eq(tasks.id, id),
+    });
+
+    if (!task || !task.isActive) {
+      throw new NotFoundException(messages.task.notFound);
+    }
+
+    if (!this.canUpdateTask(authenticatedUser, task)) {
+      throw new ForbiddenException(messages.task.updateForbidden);
+    }
+
+    const [updatedTask] = await this.db
+      .update(tasks)
+      .set(
+        await this.buildTaskUpdatePayload(
+          data,
+          data.responsibleId === undefined
+            ? undefined
+            : await this.resolveResponsibleIdForUpdate(data.responsibleId),
+        ),
+      )
+      .where(and(eq(tasks.id, id), eq(tasks.isActive, true)))
+      .returning(taskResponseColumns);
+
+    if (!updatedTask) {
+      throw new NotFoundException(messages.task.notFound);
+    }
+
+    return updatedTask;
   }
 
   async updateStatus(
@@ -360,6 +407,18 @@ export class TasksService {
     );
   }
 
+  private canUpdateTask(
+    authenticatedUser: AuthenticatedUser,
+    task: {
+      userId: string;
+    },
+  ) {
+    return (
+      authenticatedUser.role === 'ADMIN' ||
+      task.userId === authenticatedUser.userId
+    );
+  }
+
   private isStatusTransitionAllowed(
     currentStatus: (typeof taskStatusValues)[number],
     nextStatus: (typeof taskStatusValues)[number],
@@ -392,5 +451,55 @@ export class TasksService {
     }
 
     return updatedPayload;
+  }
+
+  private async resolveResponsibleIdForUpdate(
+    responsibleId: string | null,
+  ): Promise<string | null> {
+    if (responsibleId === null) {
+      return null;
+    }
+
+    const responsibleUser = await this.usersService.findById(responsibleId);
+
+    return responsibleUser.id;
+  }
+
+  private buildTaskUpdatePayload(
+    data: {
+      title?: string;
+      description?: string | null;
+      tags?: string[];
+      responsibleId?: string | null;
+    },
+    resolvedResponsibleId?: string | null,
+  ) {
+    const payload: {
+      updatedAt: Date;
+      title?: string;
+      description?: string | null;
+      tags?: string[];
+      responsibleId?: string | null;
+    } = {
+      updatedAt: new Date(),
+    };
+
+    if (data.title !== undefined) {
+      payload.title = data.title;
+    }
+
+    if (data.description !== undefined) {
+      payload.description = data.description;
+    }
+
+    if (data.tags !== undefined) {
+      payload.tags = data.tags;
+    }
+
+    if (data.responsibleId !== undefined) {
+      payload.responsibleId = resolvedResponsibleId ?? null;
+    }
+
+    return payload;
   }
 }

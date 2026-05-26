@@ -8,6 +8,7 @@ export const validationMessages = {
   passwordMinLength: 'A senha deve ter no mínimo 6 caracteres',
   passwordMaxLength: 'A senha deve ter no máximo 100 caracteres',
   taskTitleRequired: 'O título é obrigatório',
+  taskUpdateFieldRequired: 'Informe ao menos um campo para atualizar a tarefa',
   userSearchFilterRequired:
     'Informe ao menos um filtro de busca: name e/ou email',
 };

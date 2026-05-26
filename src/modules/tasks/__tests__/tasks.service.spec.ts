@@ -23,11 +23,16 @@ import {
   mockInProgressTaskRecord,
   mockInvalidCreateTaskDto,
   mockInvalidFindTasksDto,
+  mockInvalidUpdateTaskDto,
   mockInvalidUpdateTaskStatusDto,
   mockPendingTaskRecord,
+  mockResponsibleId,
   mockResponsibleTaskRequest,
   mockTaskId,
   mockUnauthorizedTaskRequest,
+  mockUpdatedTask,
+  mockUpdateTaskDto,
+  mockUpdateTaskDtoWithoutResponsible,
   mockUpdateTaskStatusToCancelledDto,
   mockUpdateTaskStatusToDoneDto,
   mockUpdateTaskStatusToInProgressDto,
@@ -61,6 +66,7 @@ describe('TasksService', () => {
   let updateReturningMock: jest.Mock;
   let usersService: {
     findByEmail: jest.Mock;
+    findById: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -102,6 +108,7 @@ describe('TasksService', () => {
 
     usersService = {
       findByEmail: jest.fn(),
+      findById: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -404,6 +411,165 @@ describe('TasksService', () => {
 
     await expect(
       service.findById(mockAuthenticatedTaskRequest.user, mockTaskId),
+    ).rejects.toMatchObject({
+      message: messages.task.notFound,
+    });
+  });
+
+  it('should update task fields for the owner user', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(mockPendingTaskRecord);
+    usersService.findById.mockResolvedValue({
+      id: mockUpdatedTask.responsibleId,
+      name: 'Mary Doe',
+      email: 'mary@example.com',
+      tasks: [],
+    });
+    updateReturningMock.mockResolvedValue([mockUpdatedTask]);
+
+    await expect(
+      service.update(
+        mockAuthenticatedTaskRequest.user,
+        mockTaskId,
+        mockUpdateTaskDto,
+      ),
+    ).resolves.toEqual(mockUpdatedTask);
+
+    expect(usersService.findById).toHaveBeenCalledWith(mockResponsibleId);
+
+    const [updatePayload] = updateSetMock.mock.calls[0] as [
+      {
+        updatedAt: Date;
+        title: string;
+        description: string | null;
+        tags: string[];
+        responsibleId: string | null;
+      },
+    ];
+
+    expect(updatePayload.updatedAt).toBeInstanceOf(Date);
+    expect(updatePayload.title).toBe('Atualizar documentação da API');
+    expect(updatePayload.description).toBeNull();
+    expect(updatePayload.tags).toEqual(['api', 'backend']);
+    expect(updatePayload.responsibleId).toBe(mockResponsibleId);
+  });
+
+  it('should allow admin to remove the responsible user from a task', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(mockPendingTaskRecord);
+    updateReturningMock.mockResolvedValue([
+      {
+        ...mockCreatedTask,
+        responsibleId: null,
+      },
+    ]);
+
+    await expect(
+      service.update(
+        mockAdminTaskRequest.user,
+        mockTaskId,
+        mockUpdateTaskDtoWithoutResponsible,
+      ),
+    ).resolves.toEqual({
+      ...mockCreatedTask,
+      responsibleId: null,
+    });
+
+    expect(usersService.findById).not.toHaveBeenCalled();
+
+    const [updatePayload] = updateSetMock.mock.calls[0] as [
+      {
+        updatedAt: Date;
+        responsibleId: string | null;
+      },
+    ];
+
+    expect(updatePayload.updatedAt).toBeInstanceOf(Date);
+    expect(updatePayload.responsibleId).toBeNull();
+  });
+
+  it('should reject update when task is not found', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(undefined);
+
+    await expect(
+      service.update(
+        mockAuthenticatedTaskRequest.user,
+        mockTaskId,
+        mockUpdateTaskDto,
+      ),
+    ).rejects.toMatchObject({
+      message: messages.task.notFound,
+    });
+
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
+  it('should reject update when task is inactive', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(mockInactiveTaskRecord);
+
+    await expect(
+      service.update(
+        mockAuthenticatedTaskRequest.user,
+        mockTaskId,
+        mockUpdateTaskDto,
+      ),
+    ).rejects.toMatchObject({
+      message: messages.task.notFound,
+    });
+
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
+  it('should reject update when requester is not the task owner or admin', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(mockBlockedTaskRecord);
+
+    await expect(
+      service.update(
+        mockResponsibleTaskRequest.user,
+        mockTaskId,
+        mockUpdateTaskDto,
+      ),
+    ).rejects.toMatchObject({
+      message: messages.task.updateForbidden,
+    });
+
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
+  it('should reject update when payload is invalid', async () => {
+    await expect(
+      service.update(
+        mockAuthenticatedTaskRequest.user,
+        mockTaskId,
+        mockInvalidUpdateTaskDto as never,
+      ),
+    ).rejects.toBeInstanceOf(ZodError);
+
+    expect(db.query.tasks.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('should reject update when no fields are provided', async () => {
+    await expect(
+      service.update(mockAuthenticatedTaskRequest.user, mockTaskId, {}),
+    ).rejects.toBeInstanceOf(ZodError);
+
+    expect(db.query.tasks.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('should reject update when task disappears before update returns', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(mockPendingTaskRecord);
+    usersService.findById.mockResolvedValue({
+      id: mockResponsibleId,
+      name: 'Mary Doe',
+      email: 'mary@example.com',
+      tasks: [],
+    });
+    updateReturningMock.mockResolvedValue([]);
+
+    await expect(
+      service.update(
+        mockAuthenticatedTaskRequest.user,
+        mockTaskId,
+        mockUpdateTaskDto,
+      ),
     ).rejects.toMatchObject({
       message: messages.task.notFound,
     });

@@ -22,6 +22,18 @@ export const tasksDocumentation = {
     validationErrorDescription: 'UUID inválido',
     notFoundDescription: 'Tarefa não encontrada',
   },
+  update: {
+    summary: 'Atualizar tarefa',
+    description:
+      'Atualiza título, descrição, tags e/ou responsável de uma tarefa ativa. Apenas administradores ou o dono da tarefa podem realizar essa alteração.',
+    successDescription: 'Tarefa atualizada com sucesso',
+    uuidParamDescription: 'UUID da tarefa que será atualizada',
+    validationErrorDescription:
+      'UUID inválido ou payload de atualização inválido',
+    forbiddenDescription:
+      'Apenas administradores ou o dono da tarefa podem atualizar a tarefa',
+    notFoundDescription: 'Tarefa não encontrada',
+  },
   updateStatus: {
     summary: 'Atualizar status da tarefa',
     description:

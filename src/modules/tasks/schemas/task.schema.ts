@@ -43,6 +43,38 @@ export const createTaskSchema = z.object({
     .optional(),
 });
 
+export const updateTaskSchema = z
+  .object({
+    title: z
+      .string({ message: messages.validation.taskTitleRequired })
+      .trim()
+      .min(1, messages.validation.taskTitleRequired)
+      .optional(),
+    description: z
+      .string()
+      .trim()
+      .optional()
+      .transform((value) =>
+        value === undefined ? undefined : value.length > 0 ? value : null,
+      ),
+    tags: z
+      .array(
+        z.string().trim().min(1, 'Cada tag precisa ter ao menos 1 caractere'),
+      )
+      .optional(),
+    responsibleId: z.uuid().nullable().optional(),
+  })
+  .refine(
+    (value) =>
+      value.title !== undefined ||
+      value.description !== undefined ||
+      value.tags !== undefined ||
+      value.responsibleId !== undefined,
+    {
+      message: messages.validation.taskUpdateFieldRequired,
+    },
+  );
+
 export const findTasksSchema = z.object({
   title: z
     .string()
@@ -64,4 +96,5 @@ export const updateTaskStatusSchema = z.object({
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type FindTasksInput = z.infer<typeof findTasksSchema>;
+export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 export type UpdateTaskStatusInput = z.infer<typeof updateTaskStatusSchema>;
