@@ -1,0 +1,15 @@
+meta {
+  name: SearchByNameAndEmail
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/users/search?name={{userName}}&email={{email}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

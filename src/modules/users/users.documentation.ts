@@ -15,8 +15,7 @@ type CreateUserDocumentation = OperationDocumentation & {
 
 type UsersDocumentation = {
   findAll: OperationDocumentation;
-  findByEmail: OperationDocumentation;
-  findByName: OperationDocumentation;
+  searchUsers: OperationDocumentation;
   findMe: OperationDocumentation;
   updateMyName: OperationDocumentation;
   updateStatus: OperationDocumentationWithUuid;
@@ -31,16 +30,10 @@ export const usersDocumentation = {
       'Retorna todos os usuários com status ativo. Esta rota exige autenticação e perfil de administrador.',
     successDescription: 'Lista de usuários ativos',
   },
-  findByEmail: {
-    summary: 'Buscar um usuário por email',
+  searchUsers: {
+    summary: 'Buscar usuários por nome e/ou email',
     description:
-      'Busca um usuário ativo a partir do email informado no corpo da requisição.',
-    successDescription: 'Usuário encontrado com sucesso',
-  },
-  findByName: {
-    summary: 'Buscar usuários por nome',
-    description:
-      'Busca usuários ativos a partir do nome informado no corpo da requisição.',
+      'Busca usuários ativos usando filtros opcionais de nome e email enviados na query string. É necessário informar ao menos um dos filtros.',
     successDescription: 'Usuários encontrados com sucesso',
   },
   findMe: {

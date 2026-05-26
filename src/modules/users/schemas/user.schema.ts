@@ -31,12 +31,22 @@ export const findUserByNameSchema = z.object({
   name: createUserSchema.shape.name,
 });
 
+export const searchUsersSchema = z
+  .object({
+    name: createUserSchema.shape.name.optional(),
+    email: createUserSchema.shape.email.optional(),
+  })
+  .refine((data) => data.name || data.email, {
+    message: messages.validation.userSearchFilterRequired,
+  });
+
 export const deleteUserSchema = z.object({
   status: userStatusSchema,
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type FindUserByNameInput = z.infer<typeof findUserByNameSchema>;
+export type SearchUsersInput = z.infer<typeof searchUsersSchema>;
 export type UpdateNameUserInput = z.infer<typeof updateNameUserSchema>;
 export type UserStatusInput = z.infer<typeof userStatusSchema>;
 export type DeleteUserInput = z.infer<typeof deleteUserSchema>;

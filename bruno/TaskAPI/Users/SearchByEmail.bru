@@ -1,11 +1,11 @@
 meta {
-  name: Me
+  name: SearchByEmail
   type: http
-  seq: 6
+  seq: 3
 }
 
 get {
-  url: {{baseUrl}}/users/me
+  url: {{baseUrl}}/users/search?email={{email}}
   body: none
   auth: bearer
 }

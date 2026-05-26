@@ -14,11 +14,13 @@ import { tasks, users } from '@/database/schema';
 import type { UserRole } from '@/database/schema/users.schema';
 
 import type { CreateUserDto } from './dto/create-user.dto';
+import type { SearchUsersDto } from './dto/search-users.dto';
 import type { UpdateNameUserDto } from './dto/update-name-user.dto';
 import {
   createUserSchema,
   deleteUserSchema,
   findUserByNameSchema,
+  searchUsersSchema,
   updateNameUserSchema,
   userStatusSchema,
 } from './schemas/user.schema';
@@ -199,6 +201,30 @@ export class UsersService {
     }
 
     return this.attachTasksToUser(this.toUserResponse(user));
+  }
+
+  async searchUsers(filters: SearchUsersDto): Promise<UserWithTasks[]> {
+    const data = searchUsersSchema.parse(filters);
+    const conditions = [eq(users.status, 'ACTIVE')];
+
+    if (data.name) {
+      conditions.push(ilike(users.name, `%${data.name}%`));
+    }
+
+    if (data.email) {
+      conditions.push(eq(users.email, data.email));
+    }
+
+    const foundUsers = await this.db.query.users.findMany({
+      columns: {
+        id: true,
+        name: true,
+        email: true,
+      },
+      where: and(...conditions),
+    });
+
+    return this.attachTasksToUsers(foundUsers);
   }
 
   async findByName(name: string): Promise<UserWithTasks[]> {

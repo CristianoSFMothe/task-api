@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   Req,
 } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -26,8 +27,7 @@ import { Roles } from '@/modules/auth/decorators/roles.decorator';
 import type { RequestWithUser } from '@/modules/auth/types/authenticated-user';
 
 import { CreateUserDto } from './dto/create-user.dto';
-import { FindUserByEmailDto } from './dto/find-user-by-email.dto';
-import { FindUserByNameDto } from './dto/find-user-by-name.dto';
+import { SearchUsersDto } from './dto/search-users.dto';
 import { UpdateNameUserDto } from './dto/update-name-user.dto';
 import {
   DeleteUserResponseDto,
@@ -59,35 +59,19 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
-  @Post('find-by-email')
+  @Get('search')
   @ApiAuthenticated()
-  @ApiOperationWithDescription(usersDocumentation.findByEmail)
+  @ApiOperationWithDescription(usersDocumentation.searchUsers)
   @ApiResponse({
     status: 200,
-    description: usersDocumentation.findByEmail.successDescription,
-    type: UserWithTasksResponseDto,
-  })
-  @ApiValidationError()
-  @ApiNotFound()
-  @ApiServerErrorResponse()
-  findByEmail(@Body() query: FindUserByEmailDto) {
-    return this.usersService.findByEmail(query.email);
-  }
-
-  @Post('find-by-name')
-  @ApiAuthenticated()
-  @ApiOperationWithDescription(usersDocumentation.findByName)
-  @ApiResponse({
-    status: 200,
-    description: usersDocumentation.findByName.successDescription,
+    description: usersDocumentation.searchUsers.successDescription,
     type: UserWithTasksResponseDto,
     isArray: true,
   })
   @ApiValidationError()
-  @ApiNotFound()
   @ApiServerErrorResponse()
-  findByName(@Body() query: FindUserByNameDto) {
-    return this.usersService.findByName(query.name);
+  searchUsers(@Query() query: SearchUsersDto) {
+    return this.usersService.searchUsers(query);
   }
 
   @Get('me')

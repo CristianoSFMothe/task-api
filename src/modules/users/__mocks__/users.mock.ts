@@ -3,6 +3,7 @@ import type { RequestWithUser } from '@/modules/auth/types/authenticated-user';
 import type { CreateUserDto } from '../dto/create-user.dto';
 import type { FindUserByEmailDto } from '../dto/find-user-by-email.dto';
 import type { FindUserByNameDto } from '../dto/find-user-by-name.dto';
+import type { SearchUsersDto } from '../dto/search-users.dto';
 import type { UpdateNameUserDto } from '../dto/update-name-user.dto';
 import type { UserAuthResponse } from '../users.service';
 
@@ -41,6 +42,26 @@ export const mockFindUserByNameDto: FindUserByNameDto = {
 export const mockFindUserByNameDtoWithNormalization: FindUserByNameDto = {
   name: '  John Doe  ',
 };
+
+export const mockSearchUsersByEmailDto: SearchUsersDto = {
+  email: 'john@example.com',
+};
+
+export const mockSearchUsersByNameDto: SearchUsersDto = {
+  name: 'John Doe',
+};
+
+export const mockSearchUsersByNameAndEmailDto: SearchUsersDto = {
+  name: 'John Doe',
+  email: 'john@example.com',
+};
+
+export const mockSearchUsersWithNormalizationDto: SearchUsersDto = {
+  name: '  John Doe  ',
+  email: 'JOHN@EXAMPLE.COM',
+};
+
+export const mockEmptySearchUsersDto: SearchUsersDto = {};
 
 export const mockUpdateNameUserDto: UpdateNameUserDto = {
   name: 'Johnny Doe',

@@ -6,8 +6,7 @@ import {
   mockAuthenticatedRequest,
   mockCreateUserDto,
   mockDeletedUserResponse,
-  mockFindUserByEmailDto,
-  mockFindUserByNameDto,
+  mockSearchUsersByNameAndEmailDto,
   mockUpdatedStatusResponse,
   mockUpdateNameUserDto,
   mockUser,
@@ -22,8 +21,7 @@ describe('UsersController', () => {
   let usersService: {
     create: jest.Mock;
     findAll: jest.Mock;
-    findByEmail: jest.Mock;
-    findByName: jest.Mock;
+    searchUsers: jest.Mock;
     findById: jest.Mock;
     updateName: jest.Mock;
     updateStatus: jest.Mock;
@@ -34,8 +32,7 @@ describe('UsersController', () => {
     usersService = {
       create: jest.fn(),
       findAll: jest.fn(),
-      findByEmail: jest.fn(),
-      findByName: jest.fn(),
+      searchUsers: jest.fn(),
       findById: jest.fn(),
       updateName: jest.fn(),
       updateStatus: jest.fn(),
@@ -79,25 +76,14 @@ describe('UsersController', () => {
     expect(usersService.findAll.mock.calls).toHaveLength(1);
   });
 
-  it('should delegate findByEmail to users service', async () => {
-    usersService.findByEmail.mockResolvedValue(mockUser);
+  it('should delegate searchUsers to users service', async () => {
+    usersService.searchUsers.mockResolvedValue(mockUsersList);
 
     await expect(
-      controller.findByEmail(mockFindUserByEmailDto),
-    ).resolves.toEqual(mockUser);
-    expect(usersService.findByEmail).toHaveBeenCalledWith(
-      mockFindUserByEmailDto.email,
-    );
-  });
-
-  it('should delegate findByName to users service', async () => {
-    usersService.findByName.mockResolvedValue(mockUsersList);
-
-    await expect(controller.findByName(mockFindUserByNameDto)).resolves.toEqual(
-      mockUsersList,
-    );
-    expect(usersService.findByName).toHaveBeenCalledWith(
-      mockFindUserByNameDto.name,
+      controller.searchUsers(mockSearchUsersByNameAndEmailDto),
+    ).resolves.toEqual(mockUsersList);
+    expect(usersService.searchUsers).toHaveBeenCalledWith(
+      mockSearchUsersByNameAndEmailDto,
     );
   });
 

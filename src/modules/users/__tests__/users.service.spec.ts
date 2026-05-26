@@ -9,6 +9,7 @@ import {
   mockCreateUserDto,
   mockCreateUserDtoWithNormalization,
   mockDeletedUserResponse,
+  mockEmptySearchUsersDto,
   mockFindUserByEmailDto,
   mockFindUserByName,
   mockFindUserByNameDtoWithNormalization,
@@ -18,6 +19,10 @@ import {
   mockInvalidCreateUserDto,
   mockInvalidUpdateNameUserDto,
   mockMissingUserId,
+  mockSearchUsersByEmailDto,
+  mockSearchUsersByNameAndEmailDto,
+  mockSearchUsersByNameDto,
+  mockSearchUsersWithNormalizationDto,
   mockSecondUserTask,
   mockUpdatedStatusResponse,
   mockUpdateNameUserDto,
@@ -330,6 +335,66 @@ describe('UsersService', () => {
     await expect(
       service.findByEmail(mockFindUserByEmailDto.email),
     ).resolves.toEqual(mockUserWithNoTasks);
+  });
+
+  it('should search users by email', async () => {
+    db.query.users.findMany.mockResolvedValue([mockUser]);
+    db.query.tasks.findMany.mockResolvedValue([mockUserTask]);
+
+    await expect(
+      service.searchUsers(mockSearchUsersByEmailDto),
+    ).resolves.toEqual([mockUserWithTasks]);
+
+    expect(db.query.users.findMany).toHaveBeenCalledTimes(1);
+    expect(db.query.tasks.findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('should search users by name', async () => {
+    db.query.users.findMany.mockResolvedValue(mockUsersList);
+    db.query.tasks.findMany.mockResolvedValue([
+      mockUserTask,
+      mockSecondUserTask,
+    ]);
+
+    await expect(
+      service.searchUsers(mockSearchUsersByNameDto),
+    ).resolves.toEqual(mockUsersListWithTasks);
+  });
+
+  it('should search users by name and email', async () => {
+    db.query.users.findMany.mockResolvedValue([mockUser]);
+    db.query.tasks.findMany.mockResolvedValue([mockUserTask]);
+
+    await expect(
+      service.searchUsers(mockSearchUsersByNameAndEmailDto),
+    ).resolves.toEqual([mockUserWithTasks]);
+  });
+
+  it('should normalize filters before searching users', async () => {
+    db.query.users.findMany.mockResolvedValue([mockUser]);
+    db.query.tasks.findMany.mockResolvedValue([mockUserTask]);
+
+    await expect(
+      service.searchUsers(mockSearchUsersWithNormalizationDto),
+    ).resolves.toEqual([mockUserWithTasks]);
+  });
+
+  it('should return an empty list when search finds no users', async () => {
+    db.query.users.findMany.mockResolvedValue([]);
+
+    await expect(
+      service.searchUsers(mockSearchUsersByEmailDto),
+    ).resolves.toEqual([]);
+
+    expect(db.query.tasks.findMany).not.toHaveBeenCalled();
+  });
+
+  it('should reject searchUsers when no filter is provided', async () => {
+    await expect(
+      service.searchUsers(mockEmptySearchUsersDto),
+    ).rejects.toBeInstanceOf(ZodError);
+
+    expect(db.query.users.findMany).not.toHaveBeenCalled();
   });
 
   it('should return users by name', async () => {
