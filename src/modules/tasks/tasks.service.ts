@@ -35,6 +35,11 @@ type TaskResponse = {
   responsibleId: string | null;
 };
 
+type DeleteTaskResponse = {
+  id: string;
+  message: string;
+};
+
 const taskResponseColumns = {
   id: tasks.id,
   title: tasks.title,
@@ -62,8 +67,19 @@ const taskStatusUpdateColumns = {
   status: true,
   userId: true,
   responsibleId: true,
+  isActive: true,
   startedAt: true,
 } as const;
+
+const taskDeleteLookupColumns = {
+  id: true,
+  userId: true,
+  isActive: true,
+} as const;
+
+const taskDeleteColumns = {
+  id: tasks.id,
+};
 
 const allowedTaskStatusTransitions: Record<
   (typeof taskStatusValues)[number],
@@ -122,6 +138,8 @@ export class TasksService {
     const data = findTasksSchema.parse(filters);
     const conditions: SQL[] = [];
 
+    conditions.push(eq(tasks.isActive, true));
+
     if (authenticatedUser.role !== 'ADMIN') {
       const visibilityCondition = or(
         eq(tasks.userId, authenticatedUser.userId),
@@ -171,6 +189,10 @@ export class TasksService {
       throw new NotFoundException(messages.task.notFound);
     }
 
+    if (!task.isActive) {
+      throw new NotFoundException(messages.task.notFound);
+    }
+
     if (!this.canUpdateTaskStatus(authenticatedUser, task)) {
       throw new ForbiddenException(messages.task.updateStatusForbidden);
     }
@@ -191,6 +213,63 @@ export class TasksService {
     }
 
     return updatedTask;
+  }
+
+  async delete(
+    authenticatedUser: AuthenticatedUser,
+    id: string,
+  ): Promise<DeleteTaskResponse> {
+    const task = await this.db.query.tasks.findFirst({
+      columns: taskDeleteLookupColumns,
+      where: eq(tasks.id, id),
+    });
+
+    if (!task) {
+      throw new NotFoundException(messages.task.notFound);
+    }
+
+    if (authenticatedUser.role === 'ADMIN') {
+      const [deletedTask] = await this.db
+        .delete(tasks)
+        .where(eq(tasks.id, id))
+        .returning(taskDeleteColumns);
+
+      if (!deletedTask) {
+        throw new NotFoundException(messages.task.notFound);
+      }
+
+      return {
+        id: deletedTask.id,
+        message: messages.task.deletedSuccessfully,
+      };
+    }
+
+    if (!task.isActive) {
+      throw new NotFoundException(messages.task.notFound);
+    }
+
+    if (task.userId !== authenticatedUser.userId) {
+      throw new ForbiddenException(messages.task.deleteForbidden);
+    }
+
+    const [deletedTask] = await this.db
+      .update(tasks)
+      .set({
+        isActive: false,
+        deletedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(tasks.id, id), eq(tasks.isActive, true)))
+      .returning(taskDeleteColumns);
+
+    if (!deletedTask) {
+      throw new NotFoundException(messages.task.notFound);
+    }
+
+    return {
+      id: deletedTask.id,
+      message: messages.task.deletedSuccessfully,
+    };
   }
 
   private async resolveTaskUser(

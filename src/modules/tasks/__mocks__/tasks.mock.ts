@@ -122,6 +122,11 @@ export const mockInvalidUpdateTaskStatusDto = {
   status: 'INVALID_STATUS',
 };
 
+export const mockDeletedTaskResponse = {
+  id: mockTaskId,
+  message: 'Tarefa deletada com sucesso',
+};
+
 export const mockCreatedTask = {
   id: mockTaskId,
   title: 'Preparar documentação da API',
@@ -131,6 +136,7 @@ export const mockCreatedTask = {
   createdBy: 'John Doe',
   userId: mockTaskOwnerId,
   responsibleId: null,
+  isActive: true,
 };
 
 export const mockCreatedTaskForOtherUser = {
@@ -142,6 +148,7 @@ export const mockCreatedTaskForOtherUser = {
   createdBy: 'Admin User',
   userId: '7f0506ab-70d3-4aab-bec9-6bd22fba8a69',
   responsibleId: mockResponsibleId,
+  isActive: true,
 };
 
 export const mockPendingTaskRecord = {
@@ -149,6 +156,7 @@ export const mockPendingTaskRecord = {
   status: 'PENDING' as const,
   userId: mockTaskOwnerId,
   responsibleId: null,
+  isActive: true,
   startedAt: null,
 };
 
@@ -157,6 +165,7 @@ export const mockInProgressTaskRecord = {
   status: 'IN_PROGRESS' as const,
   userId: mockTaskOwnerId,
   responsibleId: null,
+  isActive: true,
   startedAt: new Date('2026-05-20T12:00:00.000Z'),
 };
 
@@ -165,5 +174,12 @@ export const mockBlockedTaskRecord = {
   status: 'BLOCKED' as const,
   userId: mockTaskOwnerId,
   responsibleId: mockResponsibleId,
+  isActive: true,
   startedAt: new Date('2026-05-20T12:00:00.000Z'),
+};
+
+export const mockInactiveTaskRecord = {
+  id: mockTaskId,
+  userId: mockTaskOwnerId,
+  isActive: false,
 };

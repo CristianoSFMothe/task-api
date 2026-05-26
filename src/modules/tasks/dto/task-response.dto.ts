@@ -6,7 +6,7 @@ import { taskStatusValues } from '../schemas/task.schema';
 
 export class TaskResponseDto {
   @ApiProperty({
-    example: '8f0506ab-70d3-4aab-bec9-6bd22fba8a70',
+    example: swaggerExamples.task.id,
     format: 'uuid',
   })
   id: string;
@@ -51,4 +51,17 @@ export class TaskResponseDto {
     nullable: true,
   })
   responsibleId: string | null;
+}
+
+export class DeleteTaskResponseDto {
+  @ApiProperty({
+    example: swaggerExamples.task.id,
+    format: 'uuid',
+  })
+  id: string;
+
+  @ApiProperty({
+    example: swaggerExamples.task.deletedMessage,
+  })
+  message: string;
 }

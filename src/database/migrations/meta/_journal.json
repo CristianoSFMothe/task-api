@@ -15,6 +15,13 @@
       "when": 1779404659992,
       "tag": "0001_chilly_bruce_banner",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779834322928,
+      "tag": "0002_wild_warstar",
+      "breakpoints": true
     }
   ]
 }

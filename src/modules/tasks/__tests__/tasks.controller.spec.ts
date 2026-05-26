@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import {
   mockAuthenticatedTaskRequest,
   mockCreateTaskDto,
+  mockDeletedTaskResponse,
   mockFindTasksDto,
   mockUpdateTaskStatusToInProgressDto,
 } from '@/modules/tasks/__mocks__/tasks.mock';
@@ -14,6 +15,7 @@ describe('TasksController', () => {
   let controller: TasksController;
   let tasksService: {
     create: jest.Mock;
+    delete: jest.Mock;
     findAll: jest.Mock;
     updateStatus: jest.Mock;
   };
@@ -21,6 +23,7 @@ describe('TasksController', () => {
   beforeEach(async () => {
     tasksService = {
       create: jest.fn(),
+      delete: jest.fn(),
       findAll: jest.fn(),
       updateStatus: jest.fn(),
     };
@@ -120,6 +123,29 @@ describe('TasksController', () => {
         'task-id',
         mockUpdateTaskStatusToInProgressDto,
       ),
+    ).rejects.toBe(error);
+  });
+
+  it('should delegate delete with authenticated user', async () => {
+    tasksService.delete.mockResolvedValue(mockDeletedTaskResponse);
+
+    await expect(
+      controller.delete(mockAuthenticatedTaskRequest, 'task-id'),
+    ).resolves.toEqual(mockDeletedTaskResponse);
+
+    expect(tasksService.delete).toHaveBeenCalledWith(
+      mockAuthenticatedTaskRequest.user,
+      'task-id',
+    );
+  });
+
+  it('should propagate delete errors from service', async () => {
+    const error = new Error('delete failed');
+
+    tasksService.delete.mockRejectedValue(error);
+
+    await expect(
+      controller.delete(mockAuthenticatedTaskRequest, 'task-id'),
     ).rejects.toBe(error);
   });
 });

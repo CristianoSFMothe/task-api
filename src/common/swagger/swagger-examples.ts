@@ -16,10 +16,12 @@ export const swaggerExamples = {
     statusUpdatedMessage: 'Status do usuário atualizado com sucesso',
   },
   task: {
+    id: '8f0506ab-70d3-4aab-bec9-6bd22fba8a70',
     title: 'Preparar documentação da API',
     description: 'Consolidar os endpoints do módulo de tarefas.',
     tags: ['backend', 'documentacao'],
     status: 'IN_PROGRESS' as const,
+    deletedMessage: 'Tarefa deletada com sucesso',
   },
   errors: {
     badRequestMessages: [

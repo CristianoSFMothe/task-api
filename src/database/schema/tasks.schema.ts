@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
 import {
+  boolean,
   integer,
   pgEnum,
   pgTable,
@@ -38,6 +39,8 @@ export const tasks = pgTable('tasks', {
 
   responsibleId: uuid('responsible_id').references(() => users.id),
 
+  isActive: boolean('is_active').default(true).notNull(),
+
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -51,6 +54,8 @@ export const tasks = pgTable('tasks', {
   completedAt: timestamp('completed_at', { withTimezone: true }),
 
   completionTime: integer('completion_time'),
+
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
 });
 
 export const tasksRelations = relations(tasks, ({ one }) => ({

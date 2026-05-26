@@ -1,0 +1,15 @@
+meta {
+  name: DeleteAsAdmin
+  type: http
+  seq: 11
+}
+
+delete {
+  url: {{baseUrl}}/tasks/{{targetTaskId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminAccessToken}}
+}

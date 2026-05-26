@@ -15,8 +15,10 @@ import {
   mockCreateTaskWithAuthenticatedUserAsResponsibleDto,
   mockCreateTaskWithResponsibleDto,
   mockCreateTaskWithTaskOwnerAsResponsibleDto,
+  mockDeletedTaskResponse,
   mockFindTasksDto,
   mockFindTasksDtoWithNormalization,
+  mockInactiveTaskRecord,
   mockInProgressTaskRecord,
   mockInvalidCreateTaskDto,
   mockInvalidFindTasksDto,
@@ -35,6 +37,7 @@ import { UsersService } from '@/modules/users/users.service';
 import { TasksService } from '../tasks.service';
 
 type MockDb = {
+  delete: jest.Mock;
   insert: jest.Mock;
   update: jest.Mock;
   query: {
@@ -50,6 +53,8 @@ describe('TasksService', () => {
   let db: MockDb;
   let insertValuesMock: jest.Mock;
   let insertReturningMock: jest.Mock;
+  let deleteWhereMock: jest.Mock;
+  let deleteReturningMock: jest.Mock;
   let updateSetMock: jest.Mock;
   let updateWhereMock: jest.Mock;
   let updateReturningMock: jest.Mock;
@@ -63,6 +68,11 @@ describe('TasksService', () => {
       returning: insertReturningMock,
     }));
 
+    deleteReturningMock = jest.fn();
+    deleteWhereMock = jest.fn(() => ({
+      returning: deleteReturningMock,
+    }));
+
     updateReturningMock = jest.fn();
     updateWhereMock = jest.fn(() => ({
       returning: updateReturningMock,
@@ -72,6 +82,9 @@ describe('TasksService', () => {
     }));
 
     db = {
+      delete: jest.fn(() => ({
+        where: deleteWhereMock,
+      })),
       insert: jest.fn(() => ({
         values: insertValuesMock,
       })),
@@ -292,7 +305,7 @@ describe('TasksService', () => {
     ];
 
     expect(db.query.tasks.findMany).toHaveBeenCalledTimes(1);
-    expect(queryArgs.where).toBeUndefined();
+    expect(queryArgs.where).toBeDefined();
   });
 
   it('should apply optional filters when listing tasks', async () => {
@@ -541,6 +554,96 @@ describe('TasksService', () => {
         mockTaskId,
         mockUpdateTaskStatusToDoneDto,
       ),
+    ).rejects.toMatchObject({
+      message: messages.task.notFound,
+    });
+  });
+
+  it('should soft delete an active task for the owner user', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(mockPendingTaskRecord);
+    updateReturningMock.mockResolvedValue([{ id: mockTaskId }]);
+
+    await expect(
+      service.delete(mockAuthenticatedTaskRequest.user, mockTaskId),
+    ).resolves.toEqual(mockDeletedTaskResponse);
+
+    const [updatePayload] = updateSetMock.mock.calls[0] as [
+      {
+        isActive: boolean;
+        deletedAt: Date;
+        updatedAt: Date;
+      },
+    ];
+
+    expect(updatePayload.isActive).toBe(false);
+    expect(updatePayload.deletedAt).toBeInstanceOf(Date);
+    expect(updatePayload.updatedAt).toBeInstanceOf(Date);
+    expect(db.delete).not.toHaveBeenCalled();
+  });
+
+  it('should hard delete a task for admin users', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(mockInactiveTaskRecord);
+    deleteReturningMock.mockResolvedValue([{ id: mockTaskId }]);
+
+    await expect(
+      service.delete(mockAdminTaskRequest.user, mockTaskId),
+    ).resolves.toEqual(mockDeletedTaskResponse);
+
+    expect(db.delete).toHaveBeenCalledTimes(1);
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
+  it('should reject delete when task is not found', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(undefined);
+
+    await expect(
+      service.delete(mockAuthenticatedTaskRequest.user, mockTaskId),
+    ).rejects.toMatchObject({
+      message: messages.task.notFound,
+    });
+  });
+
+  it('should reject soft delete for inactive tasks', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(mockInactiveTaskRecord);
+
+    await expect(
+      service.delete(mockAuthenticatedTaskRequest.user, mockTaskId),
+    ).rejects.toMatchObject({
+      message: messages.task.notFound,
+    });
+
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
+  it('should reject soft delete when requester is not the task owner', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(mockBlockedTaskRecord);
+
+    await expect(
+      service.delete(mockResponsibleTaskRequest.user, mockTaskId),
+    ).rejects.toMatchObject({
+      message: messages.task.deleteForbidden,
+    });
+
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
+  it('should reject hard delete when task disappears before delete returns', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(mockPendingTaskRecord);
+    deleteReturningMock.mockResolvedValue([]);
+
+    await expect(
+      service.delete(mockAdminTaskRequest.user, mockTaskId),
+    ).rejects.toMatchObject({
+      message: messages.task.notFound,
+    });
+  });
+
+  it('should reject soft delete when task disappears before update returns', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(mockPendingTaskRecord);
+    updateReturningMock.mockResolvedValue([]);
+
+    await expect(
+      service.delete(mockAuthenticatedTaskRequest.user, mockTaskId),
     ).rejects.toMatchObject({
       message: messages.task.notFound,
     });

@@ -375,7 +375,7 @@ export class UsersService {
   ): Promise<T & { tasks: UserTaskResponse[] }> {
     const createdTasks = await this.db.query.tasks.findMany({
       columns: userTaskColumns,
-      where: eq(tasks.userId, user.id),
+      where: and(eq(tasks.userId, user.id), eq(tasks.isActive, true)),
       orderBy: [desc(tasks.createdAt)],
     });
 
@@ -395,7 +395,7 @@ export class UsersService {
     const userIds = foundUsers.map((user) => user.id);
     const createdTasks = await this.db.query.tasks.findMany({
       columns: userTaskColumns,
-      where: inArray(tasks.userId, userIds),
+      where: and(inArray(tasks.userId, userIds), eq(tasks.isActive, true)),
       orderBy: [desc(tasks.createdAt)],
     });
 

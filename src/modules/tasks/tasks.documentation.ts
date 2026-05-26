@@ -24,4 +24,15 @@ export const tasksDocumentation = {
       'Apenas administradores, dono da tarefa ou responsável podem atualizar o status',
     notFoundDescription: 'Tarefa não encontrada',
   },
+  delete: {
+    summary: 'Deletar tarefa',
+    description:
+      'Administradores removem a tarefa fisicamente. Usuários comuns realizam delete lógico apenas nas próprias tarefas ativas.',
+    successDescription: 'Tarefa deletada com sucesso',
+    uuidParamDescription: 'UUID da tarefa que será deletada',
+    validationErrorDescription: 'UUID inválido',
+    forbiddenDescription:
+      'Apenas administradores ou o dono da tarefa podem deletá-la',
+    notFoundDescription: 'Tarefa não encontrada',
+  },
 } as const;

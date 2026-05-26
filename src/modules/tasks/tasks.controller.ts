@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -24,7 +25,10 @@ import type { RequestWithUser } from '@/modules/auth/types/authenticated-user';
 
 import { CreateTaskDto } from './dto/create-task.dto';
 import { FindTasksDto } from './dto/find-tasks.dto';
-import { TaskResponseDto } from './dto/task-response.dto';
+import {
+  DeleteTaskResponseDto,
+  TaskResponseDto,
+} from './dto/task-response.dto';
 import { UpdateTaskStatusDto } from './dto/update-task-status.dto';
 import { tasksDocumentation } from './tasks.documentation';
 import { TasksService } from './tasks.service';
@@ -100,5 +104,29 @@ export class TasksController {
       id,
       updateTaskStatusDto,
     );
+  }
+
+  @Delete(':id')
+  @ApiAuthenticated()
+  @ApiOperationWithDescription(tasksDocumentation.delete)
+  @ApiUuidParam('id', tasksDocumentation.delete.uuidParamDescription)
+  @ApiResponse({
+    status: 200,
+    description: tasksDocumentation.delete.successDescription,
+    type: DeleteTaskResponseDto,
+  })
+  @ApiValidationError(tasksDocumentation.delete.validationErrorDescription)
+  @ApiResponse({
+    status: 403,
+    description: tasksDocumentation.delete.forbiddenDescription,
+    type: ForbiddenSwagger,
+  })
+  @ApiNotFound(tasksDocumentation.delete.notFoundDescription)
+  @ApiServerErrorResponse()
+  delete(
+    @Req() request: RequestWithUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return this.tasksService.delete(request.user, id);
   }
 }
