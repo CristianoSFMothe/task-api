@@ -16,6 +16,7 @@ import {
   mockCreateTaskWithResponsibleDto,
   mockCreateTaskWithTaskOwnerAsResponsibleDto,
   mockDeletedTaskResponse,
+  mockDoneTaskRecord,
   mockFindTasksDto,
   mockFindTasksDtoWithNormalization,
   mockInactiveTaskRecord,
@@ -601,6 +602,32 @@ describe('TasksService', () => {
     ).rejects.toMatchObject({
       message: messages.task.notFound,
     });
+  });
+
+  it('should reject delete for done tasks even for admin users', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(mockDoneTaskRecord);
+
+    await expect(
+      service.delete(mockAdminTaskRequest.user, mockTaskId),
+    ).rejects.toMatchObject({
+      message: messages.task.deleteDoneForbidden,
+    });
+
+    expect(db.delete).not.toHaveBeenCalled();
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
+  it('should reject delete for done tasks for regular users', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(mockDoneTaskRecord);
+
+    await expect(
+      service.delete(mockAuthenticatedTaskRequest.user, mockTaskId),
+    ).rejects.toMatchObject({
+      message: messages.task.deleteDoneForbidden,
+    });
+
+    expect(db.delete).not.toHaveBeenCalled();
+    expect(db.update).not.toHaveBeenCalled();
   });
 
   it('should reject soft delete for inactive tasks', async () => {

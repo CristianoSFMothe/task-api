@@ -73,6 +73,7 @@ const taskStatusUpdateColumns = {
 
 const taskDeleteLookupColumns = {
   id: true,
+  status: true,
   userId: true,
   isActive: true,
 } as const;
@@ -226,6 +227,10 @@ export class TasksService {
 
     if (!task) {
       throw new NotFoundException(messages.task.notFound);
+    }
+
+    if (task.status === 'DONE') {
+      throw new BadRequestException(messages.task.deleteDoneForbidden);
     }
 
     if (authenticatedUser.role === 'ADMIN') {

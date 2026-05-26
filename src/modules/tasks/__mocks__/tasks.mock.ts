@@ -180,6 +180,14 @@ export const mockBlockedTaskRecord = {
 
 export const mockInactiveTaskRecord = {
   id: mockTaskId,
+  status: 'PENDING' as const,
   userId: mockTaskOwnerId,
   isActive: false,
+};
+
+export const mockDoneTaskRecord = {
+  id: mockTaskId,
+  status: 'DONE' as const,
+  userId: mockTaskOwnerId,
+  isActive: true,
 };
