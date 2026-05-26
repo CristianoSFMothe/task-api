@@ -1,0 +1,15 @@
+meta {
+  name: FindByStatus
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/tasks?status={{taskStatus}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

@@ -1,0 +1,31 @@
+meta {
+  name: Create
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/tasks
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  content-type: application/json
+}
+
+body:json {
+  {
+    "title": "{{taskTitle}}",
+    "description": "{{taskDescription}}",
+    "tags": [
+      "{{taskTag}}"
+    ],
+    "userEmail": "{{taskUserEmail}}",
+    "responsibleEmail": "{{taskResponsibleEmail}}"
+  }
+}

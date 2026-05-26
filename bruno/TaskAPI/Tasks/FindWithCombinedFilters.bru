@@ -1,0 +1,15 @@
+meta {
+  name: FindWithCombinedFilters
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/tasks?title={{taskTitle}}&status={{taskStatus}}&tag={{taskTag}}&responsibleId={{taskResponsibleId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
