@@ -12,6 +12,8 @@ import {
   mockCreateTaskDtoWithNormalization,
   mockCreateTaskForOtherUserDto,
   mockCreateTaskWithResponsibleDto,
+  mockFindTasksDto,
+  mockFindTasksDtoWithNormalization,
   mockInvalidCreateTaskDto,
 } from '@/modules/tasks/__mocks__/tasks.mock';
 import { UsersService } from '@/modules/users/users.service';
@@ -191,6 +193,45 @@ describe('TasksService', () => {
     ]);
 
     expect(db.query.tasks.findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('should apply optional filters when listing tasks', async () => {
+    db.query.tasks.findMany.mockResolvedValue([mockCreatedTask]);
+
+    await expect(
+      service.findAll(mockAdminTaskRequest.user, mockFindTasksDto),
+    ).resolves.toEqual([mockCreatedTask]);
+
+    const [queryArgs] = db.query.tasks.findMany.mock.calls[0] as [
+      {
+        columns: unknown;
+        where: unknown;
+        orderBy: unknown;
+      },
+    ];
+
+    expect(queryArgs.columns).toBeDefined();
+    expect(queryArgs.where).toBeDefined();
+    expect(queryArgs.orderBy).toBeDefined();
+  });
+
+  it('should normalize list filters before querying', async () => {
+    db.query.tasks.findMany.mockResolvedValue([mockCreatedTask]);
+
+    await expect(
+      service.findAll(
+        mockAuthenticatedTaskRequest.user,
+        mockFindTasksDtoWithNormalization,
+      ),
+    ).resolves.toEqual([mockCreatedTask]);
+
+    const [queryArgs] = db.query.tasks.findMany.mock.calls[0] as [
+      {
+        where: unknown;
+      },
+    ];
+
+    expect(queryArgs.where).toBeDefined();
   });
 
   it('should return only tasks visible to a regular user', async () => {

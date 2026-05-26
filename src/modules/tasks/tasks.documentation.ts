@@ -10,7 +10,7 @@ export const tasksDocumentation = {
   findAll: {
     summary: 'Listar tarefas',
     description:
-      'Retorna a lista de tarefas disponíveis para o usuário autenticado.',
+      'Retorna a lista de tarefas disponíveis para o usuário autenticado, com filtros opcionais por título, status, tag e responsável.',
     successDescription: 'Lista de tarefas retornada com sucesso',
   },
 } as const;

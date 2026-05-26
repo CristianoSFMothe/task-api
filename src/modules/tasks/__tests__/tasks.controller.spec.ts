@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import {
   mockAuthenticatedTaskRequest,
   mockCreateTaskDto,
+  mockFindTasksDto,
 } from '@/modules/tasks/__mocks__/tasks.mock';
 
 import { TasksController } from '../tasks.controller';
@@ -52,11 +53,12 @@ describe('TasksController', () => {
     tasksService.findAll.mockResolvedValue([{ id: 'task-id' }]);
 
     await expect(
-      controller.findAll(mockAuthenticatedTaskRequest),
+      controller.findAll(mockAuthenticatedTaskRequest, mockFindTasksDto),
     ).resolves.toEqual([{ id: 'task-id' }]);
 
     expect(tasksService.findAll).toHaveBeenCalledWith(
       mockAuthenticatedTaskRequest.user,
+      mockFindTasksDto,
     );
   });
 });

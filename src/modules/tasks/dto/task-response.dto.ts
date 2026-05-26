@@ -2,6 +2,8 @@ import { ApiProperty } from '@nestjs/swagger';
 
 import { swaggerExamples } from '@/common/swagger/swagger-examples';
 
+import { taskStatusValues } from '../schemas/task.schema';
+
 export class TaskResponseDto {
   @ApiProperty({
     example: '8f0506ab-70d3-4aab-bec9-6bd22fba8a70',
@@ -28,15 +30,9 @@ export class TaskResponseDto {
 
   @ApiProperty({
     example: 'PENDING',
-    enum: ['PENDING', 'IN_PROGRESS', 'PAUSED', 'BLOCKED', 'DONE', 'CANCELLED'],
+    enum: taskStatusValues,
   })
-  status:
-    | 'PENDING'
-    | 'IN_PROGRESS'
-    | 'PAUSED'
-    | 'BLOCKED'
-    | 'DONE'
-    | 'CANCELLED';
+  status: (typeof taskStatusValues)[number];
 
   @ApiProperty({
     example: swaggerExamples.user.name,

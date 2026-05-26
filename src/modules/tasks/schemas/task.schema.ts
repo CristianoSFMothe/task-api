@@ -2,6 +2,17 @@ import { z } from 'zod';
 
 import { messages } from '@/common/messages';
 
+export const taskStatusValues = [
+  'PENDING',
+  'IN_PROGRESS',
+  'PAUSED',
+  'BLOCKED',
+  'DONE',
+  'CANCELLED',
+] as const;
+
+export const taskStatusSchema = z.enum(taskStatusValues);
+
 export const createTaskSchema = z.object({
   title: z
     .string({ message: messages.validation.taskTitleRequired })
@@ -32,4 +43,20 @@ export const createTaskSchema = z.object({
     .optional(),
 });
 
+export const findTasksSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value ? value : undefined)),
+  status: taskStatusSchema.optional(),
+  tag: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value ? value : undefined)),
+  responsibleId: z.uuid().optional(),
+});
+
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
+export type FindTasksInput = z.infer<typeof findTasksSchema>;

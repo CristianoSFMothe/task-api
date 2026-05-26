@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import {
@@ -12,6 +12,7 @@ import {
 import type { RequestWithUser } from '@/modules/auth/types/authenticated-user';
 
 import { CreateTaskDto } from './dto/create-task.dto';
+import { FindTasksDto } from './dto/find-tasks.dto';
 import { TaskResponseDto } from './dto/task-response.dto';
 import { tasksDocumentation } from './tasks.documentation';
 import { TasksService } from './tasks.service';
@@ -54,7 +55,7 @@ export class TasksController {
     isArray: true,
   })
   @ApiServerErrorResponse()
-  findAll(@Req() request: RequestWithUser) {
-    return this.tasksService.findAll(request.user);
+  findAll(@Req() request: RequestWithUser, @Query() query: FindTasksDto) {
+    return this.tasksService.findAll(request.user, query);
   }
 }

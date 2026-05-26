@@ -1,6 +1,7 @@
 import type { RequestWithUser } from '@/modules/auth/types/authenticated-user';
 
 import type { CreateTaskDto } from '../dto/create-task.dto';
+import type { FindTasksDto } from '../dto/find-tasks.dto';
 
 export const mockTaskId = '8f0506ab-70d3-4aab-bec9-6bd22fba8a70';
 export const mockTaskOwnerId = '6f0506ab-70d3-4aab-bec9-6bd22fba8a66';
@@ -50,6 +51,18 @@ export const mockCreateTaskWithResponsibleDto: CreateTaskDto = {
 export const mockInvalidCreateTaskDto: CreateTaskDto = {
   title: '   ',
   responsibleEmail: 'invalid-email',
+};
+
+export const mockFindTasksDto: FindTasksDto = {
+  title: 'documentação',
+  status: 'PENDING',
+  tag: 'backend',
+  responsibleId: mockResponsibleId,
+};
+
+export const mockFindTasksDtoWithNormalization: FindTasksDto = {
+  title: '  documentação  ',
+  tag: ' backend ',
 };
 
 export const mockCreatedTask = {

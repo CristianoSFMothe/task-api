@@ -1,5 +1,5 @@
 import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
-import { desc, eq, or } from 'drizzle-orm';
+import { and, arrayContains, desc, eq, ilike, or, type SQL } from 'drizzle-orm';
 
 import { messages } from '@/common/messages';
 import { DATABASE_TOKEN } from '@/database/database.provider';
@@ -9,20 +9,19 @@ import type { AuthenticatedUser } from '@/modules/auth/types/authenticated-user'
 import { UsersService } from '@/modules/users/users.service';
 
 import type { CreateTaskDto } from './dto/create-task.dto';
-import { createTaskSchema } from './schemas/task.schema';
+import type { FindTasksDto } from './dto/find-tasks.dto';
+import {
+  createTaskSchema,
+  findTasksSchema,
+  taskStatusValues,
+} from './schemas/task.schema';
 
 type TaskResponse = {
   id: string;
   title: string;
   description: string | null;
   tags: string[];
-  status:
-    | 'PENDING'
-    | 'IN_PROGRESS'
-    | 'PAUSED'
-    | 'BLOCKED'
-    | 'DONE'
-    | 'CANCELLED';
+  status: (typeof taskStatusValues)[number];
   createdBy: string;
   userId: string;
   responsibleId: string | null;
@@ -88,20 +87,43 @@ export class TasksService {
     return newTask;
   }
 
-  findAll(authenticatedUser: AuthenticatedUser): Promise<TaskResponse[]> {
-    if (authenticatedUser.role === 'ADMIN') {
-      return this.db.query.tasks.findMany({
-        columns: taskQueryColumns,
-        orderBy: [desc(tasks.createdAt)],
-      });
+  findAll(
+    authenticatedUser: AuthenticatedUser,
+    filters: FindTasksDto = {},
+  ): Promise<TaskResponse[]> {
+    const data = findTasksSchema.parse(filters);
+    const conditions: SQL[] = [];
+
+    if (authenticatedUser.role !== 'ADMIN') {
+      const visibilityCondition = or(
+        eq(tasks.userId, authenticatedUser.userId),
+        eq(tasks.responsibleId, authenticatedUser.userId),
+      );
+
+      if (visibilityCondition) {
+        conditions.push(visibilityCondition);
+      }
+    }
+
+    if (data.title) {
+      conditions.push(ilike(tasks.title, `%${data.title}%`));
+    }
+
+    if (data.status) {
+      conditions.push(eq(tasks.status, data.status));
+    }
+
+    if (data.tag) {
+      conditions.push(arrayContains(tasks.tags, [data.tag]));
+    }
+
+    if (data.responsibleId) {
+      conditions.push(eq(tasks.responsibleId, data.responsibleId));
     }
 
     return this.db.query.tasks.findMany({
       columns: taskQueryColumns,
-      where: or(
-        eq(tasks.userId, authenticatedUser.userId),
-        eq(tasks.responsibleId, authenticatedUser.userId),
-      ),
+      where: conditions.length > 0 ? and(...conditions) : undefined,
       orderBy: [desc(tasks.createdAt)],
     });
   }
