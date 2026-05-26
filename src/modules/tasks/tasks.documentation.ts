@@ -13,6 +13,15 @@ export const tasksDocumentation = {
       'Retorna a lista de tarefas disponíveis para o usuário autenticado, com filtros opcionais por título, status, tag e responsável.',
     successDescription: 'Lista de tarefas retornada com sucesso',
   },
+  findById: {
+    summary: 'Buscar tarefa por ID',
+    description:
+      'Retorna uma tarefa ativa pelo UUID informado. Administradores podem acessar qualquer tarefa ativa; usuários comuns apenas tarefas visíveis para eles.',
+    successDescription: 'Tarefa encontrada com sucesso',
+    uuidParamDescription: 'UUID da tarefa que será consultada',
+    validationErrorDescription: 'UUID inválido',
+    notFoundDescription: 'Tarefa não encontrada',
+  },
   updateStatus: {
     summary: 'Atualizar status da tarefa',
     description:

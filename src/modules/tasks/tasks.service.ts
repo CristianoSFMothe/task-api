@@ -175,6 +175,32 @@ export class TasksService {
     });
   }
 
+  async findById(
+    authenticatedUser: AuthenticatedUser,
+    id: string,
+  ): Promise<TaskResponse> {
+    const task = await this.db.query.tasks.findFirst({
+      columns: taskQueryColumns,
+      where:
+        authenticatedUser.role === 'ADMIN'
+          ? and(eq(tasks.id, id), eq(tasks.isActive, true))
+          : and(
+              eq(tasks.id, id),
+              eq(tasks.isActive, true),
+              or(
+                eq(tasks.userId, authenticatedUser.userId),
+                eq(tasks.responsibleId, authenticatedUser.userId),
+              ),
+            ),
+    });
+
+    if (!task) {
+      throw new NotFoundException(messages.task.notFound);
+    }
+
+    return task;
+  }
+
   async updateStatus(
     authenticatedUser: AuthenticatedUser,
     id: string,

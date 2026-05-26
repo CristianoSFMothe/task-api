@@ -17,6 +17,7 @@ describe('TasksController', () => {
     create: jest.Mock;
     delete: jest.Mock;
     findAll: jest.Mock;
+    findById: jest.Mock;
     updateStatus: jest.Mock;
   };
 
@@ -25,6 +26,7 @@ describe('TasksController', () => {
       create: jest.fn(),
       delete: jest.fn(),
       findAll: jest.fn(),
+      findById: jest.fn(),
       updateStatus: jest.fn(),
     };
 
@@ -88,6 +90,29 @@ describe('TasksController', () => {
 
     await expect(
       controller.findAll(mockAuthenticatedTaskRequest, mockFindTasksDto),
+    ).rejects.toBe(error);
+  });
+
+  it('should delegate findById with authenticated user', async () => {
+    tasksService.findById.mockResolvedValue({ id: 'task-id' });
+
+    await expect(
+      controller.findById(mockAuthenticatedTaskRequest, 'task-id'),
+    ).resolves.toEqual({ id: 'task-id' });
+
+    expect(tasksService.findById).toHaveBeenCalledWith(
+      mockAuthenticatedTaskRequest.user,
+      'task-id',
+    );
+  });
+
+  it('should propagate findById errors from service', async () => {
+    const error = new Error('find by id failed');
+
+    tasksService.findById.mockRejectedValue(error);
+
+    await expect(
+      controller.findById(mockAuthenticatedTaskRequest, 'task-id'),
     ).rejects.toBe(error);
   });
 

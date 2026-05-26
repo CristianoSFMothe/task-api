@@ -369,6 +369,46 @@ describe('TasksService', () => {
     expect(db.query.tasks.findMany).toHaveBeenCalledTimes(1);
   });
 
+  it('should return task by id for admin users', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(mockCreatedTask);
+
+    await expect(
+      service.findById(mockAdminTaskRequest.user, mockTaskId),
+    ).resolves.toEqual(mockCreatedTask);
+
+    expect(db.query.tasks.findFirst).toHaveBeenCalledTimes(1);
+  });
+
+  it('should return task by id for visible regular users', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(mockCreatedTask);
+
+    await expect(
+      service.findById(mockAuthenticatedTaskRequest.user, mockTaskId),
+    ).resolves.toEqual(mockCreatedTask);
+
+    expect(db.query.tasks.findFirst).toHaveBeenCalledTimes(1);
+  });
+
+  it('should reject findById when task is not visible to regular users', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(undefined);
+
+    await expect(
+      service.findById(mockUnauthorizedTaskRequest.user, mockTaskId),
+    ).rejects.toMatchObject({
+      message: messages.task.notFound,
+    });
+  });
+
+  it('should reject findById when task is inactive or missing', async () => {
+    db.query.tasks.findFirst.mockResolvedValue(undefined);
+
+    await expect(
+      service.findById(mockAuthenticatedTaskRequest.user, mockTaskId),
+    ).rejects.toMatchObject({
+      message: messages.task.notFound,
+    });
+  });
+
   it('should update task status from pending to in progress', async () => {
     db.query.tasks.findFirst.mockResolvedValue(mockPendingTaskRecord);
     updateReturningMock.mockResolvedValue([

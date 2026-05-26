@@ -75,6 +75,25 @@ export class TasksController {
     return this.tasksService.findAll(request.user, query);
   }
 
+  @Get(':id')
+  @ApiAuthenticated()
+  @ApiOperationWithDescription(tasksDocumentation.findById)
+  @ApiUuidParam('id', tasksDocumentation.findById.uuidParamDescription)
+  @ApiResponse({
+    status: 200,
+    description: tasksDocumentation.findById.successDescription,
+    type: TaskResponseDto,
+  })
+  @ApiValidationError(tasksDocumentation.findById.validationErrorDescription)
+  @ApiNotFound(tasksDocumentation.findById.notFoundDescription)
+  @ApiServerErrorResponse()
+  findById(
+    @Req() request: RequestWithUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return this.tasksService.findById(request.user, id);
+  }
+
   @Patch(':id/status')
   @ApiAuthenticated()
   @ApiOperationWithDescription(tasksDocumentation.updateStatus)
