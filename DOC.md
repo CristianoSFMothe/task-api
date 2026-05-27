@@ -1,67 +1,170 @@
-# Documentação Completa da API
+# Documentação da Task API
 
-## Informações gerais
+## Índice
+
+- [Visão Geral](#visão-geral)
+- [URLs e Ambientes](#urls-e-ambientes)
+- [Autenticação](#autenticação)
+- [Perfis e Regras de Acesso](#perfis-e-regras-de-acesso)
+- [Validação e Erros](#validação-e-erros)
+- [Modelos de Dados](#modelos-de-dados)
+- [Fluxos de Negócio Importantes](#fluxos-de-negócio-importantes)
+- [Referência dos Endpoints](#referência-dos-endpoints)
+- [Exemplos cURL](#exemplos-curl)
+
+## Visão Geral
+
+A Task API é uma API REST para:
+
+- autenticação com JWT
+- cadastro e gerenciamento de usuários
+- criação e acompanhamento de tarefas
+- controle de responsáveis
+- transições de status validadas no backend
+
+Stack principal:
+
+- NestJS 11
+- Fastify
+- PostgreSQL
+- Drizzle ORM
+- JWT
+- Class Validator + Zod
+
+## URLs e Ambientes
 
 - Base URL local: `http://localhost:3333/api/v1`
 - Swagger: `http://localhost:3333/docs`
-- Formato: `application/json`
-- Autenticação: JWT Bearer
-- Prefixo global: `api/v1`
+- Content-Type padrão: `application/json`
 
-## Convenções da API
+Prefixo global da aplicação:
 
-### Autenticação
+```text
+/api/v1
+```
 
-Envie o token JWT no header:
+Exemplo real de rota:
+
+```text
+POST /api/v1/auth/login
+```
+
+## Autenticação
+
+A API usa JWT Bearer Token.
+
+Header esperado:
 
 ```http
 Authorization: Bearer <token>
 ```
 
-### Validação
+Rotas públicas:
+
+- `POST /users`
+- `POST /auth/login`
+
+Todas as demais rotas exigem token válido.
+
+O token é emitido pelo endpoint `POST /auth/login` com os dados:
+
+- `sub`: id do usuário
+- `email`
+- `role`
+
+Se o token for inválido, expirado ou apontar para um usuário inexistente/inativo, a API retorna `401`.
+
+## Perfis e Regras de Acesso
+
+Perfis disponíveis:
+
+- `USER`
+- `ADMIN`
+
+Regras gerais:
+
+- `ADMIN` pode acessar rotas administrativas de usuários
+- `ADMIN` pode visualizar qualquer tarefa ativa
+- usuário comum visualiza apenas:
+  - tarefas próprias
+  - tarefas em que é responsável
+- somente `ADMIN` ou o dono da tarefa podem editar dados da tarefa
+- `ADMIN`, dono da tarefa ou responsável podem atualizar status da tarefa
+- somente `ADMIN` ou o dono da tarefa podem deletá-la
+
+## Validação e Erros
+
+### Validação global
 
 A aplicação usa `ValidationPipe` global com:
 
 - `whitelist: true`
 - `forbidNonWhitelisted: true`
 
-Na prática isso significa:
+Isso significa:
 
-- campos não declarados no DTO são rejeitados
-- formatos inválidos retornam erro `400`
-- alguns fluxos também passam por validação adicional com Zod no service
+- campos extras fora do DTO são rejeitados
+- tipos e formatos inválidos retornam `400`
+- alguns endpoints ainda têm validação complementar com Zod no service
 
-### Perfis de acesso
+### Formato comum de erros do Nest
 
-- `USER`: perfil padrão
-- `ADMIN`: perfil com acesso administrativo
+Exemplo de erro `400`:
 
-### Status de usuário
+```json
+{
+  "message": [
+    "Informe um email válido",
+    "A senha deve ter no mínimo 6 caracteres"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
 
-- `ACTIVE`
-- `INACTIVE`
+Exemplo de erro `401`:
 
-### Status de tarefa
+```json
+{
+  "message": "Email ou senha inválidos",
+  "error": "Unauthorized",
+  "statusCode": 401
+}
+```
 
-- `PENDING`
-- `IN_PROGRESS`
-- `PAUSED`
-- `BLOCKED`
-- `DONE`
-- `CANCELLED`
+Exemplo de erro `403`:
 
-### Transições de status da tarefa
+```json
+{
+  "message": "Você não tem permissão para atualizar esta tarefa",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
 
-| Status atual  | Próximos status permitidos               |
-| ------------- | ---------------------------------------- |
-| `PENDING`     | `IN_PROGRESS`, `CANCELLED`               |
-| `IN_PROGRESS` | `DONE`, `PAUSED`, `BLOCKED`, `CANCELLED` |
-| `PAUSED`      | `IN_PROGRESS`, `BLOCKED`, `CANCELLED`    |
-| `BLOCKED`     | `IN_PROGRESS`, `PAUSED`, `CANCELLED`     |
-| `DONE`        | nenhum                                   |
-| `CANCELLED`   | nenhum                                   |
+Exemplo de erro `404`:
 
-## Modelos de resposta
+```json
+{
+  "message": "Tarefa não encontrada",
+  "error": "Not Found",
+  "statusCode": 404
+}
+```
+
+### Códigos de status usados
+
+| Código | Quando aparece                                                         |
+| ------ | ---------------------------------------------------------------------- |
+| `200`  | leitura, atualização, logout e remoções bem-sucedidas                  |
+| `201`  | criação bem-sucedida                                                   |
+| `400`  | payload inválido, UUID inválido, filtros inválidos, transição inválida |
+| `401`  | token inválido ou credenciais inválidas                                |
+| `403`  | usuário autenticado sem permissão suficiente                           |
+| `404`  | recurso não encontrado ou invisível pela regra de acesso               |
+| `409`  | conflito de unicidade, como email já cadastrado                        |
+
+## Modelos de Dados
 
 ### Usuário
 
@@ -95,6 +198,17 @@ Na prática isso significa:
 }
 ```
 
+### Resposta de login
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "userId": "6f0506ab-70d3-4aab-bec9-6bd22fba8a66",
+  "name": "John Doe",
+  "email": "john@example.com"
+}
+```
+
 ### Tarefa
 
 ```json
@@ -110,17 +224,91 @@ Na prática isso significa:
 }
 ```
 
-## Endpoints
+### Enums relevantes
+
+Status de usuário:
+
+- `ACTIVE`
+- `INACTIVE`
+
+Status de tarefa:
+
+- `PENDING`
+- `IN_PROGRESS`
+- `PAUSED`
+- `BLOCKED`
+- `DONE`
+- `CANCELLED`
+
+## Fluxos de Negócio Importantes
+
+### Criação de usuários
+
+- a rota de criação é pública
+- usuários novos entram como `USER`
+- usuários novos entram como `ACTIVE`
+- `email` é único
+
+### Criação de tarefas
+
+- sem `userEmail`, a tarefa pertence ao usuário autenticado
+- somente `ADMIN` pode criar tarefa para outro usuário
+- `responsibleEmail` é opcional
+- o responsável pode ser:
+  - o dono da tarefa
+  - o usuário autenticado
+  - outro usuário ativo existente
+
+### Atualização de tarefas
+
+- pelo menos um campo deve ser enviado
+- `description: ""` vira `null`
+- `responsibleId: null` remove o responsável
+- atualização de dados não altera o `status`
+
+### Atualização de status da tarefa
+
+Transições permitidas:
+
+| Atual         | Permitidos                               |
+| ------------- | ---------------------------------------- |
+| `PENDING`     | `IN_PROGRESS`, `CANCELLED`               |
+| `IN_PROGRESS` | `DONE`, `PAUSED`, `BLOCKED`, `CANCELLED` |
+| `PAUSED`      | `IN_PROGRESS`, `BLOCKED`, `CANCELLED`    |
+| `BLOCKED`     | `IN_PROGRESS`, `PAUSED`, `CANCELLED`     |
+| `DONE`        | nenhum                                   |
+| `CANCELLED`   | nenhum                                   |
+
+Efeitos automáticos:
+
+- ao entrar em `IN_PROGRESS`, `startedAt` é preenchido se ainda estiver vazio
+- ao entrar em `DONE`, `completedAt` é preenchido
+- ao entrar em `DONE`, `completionTime` é calculado em segundos se `startedAt` existir
+
+### Exclusão de tarefas
+
+- `ADMIN` faz exclusão física
+- usuário comum faz exclusão lógica
+- tarefas `DONE` não podem ser deletadas
+
+## Referência dos Endpoints
 
 ## Auth
 
 ### `POST /auth/login`
 
-Autentica um usuário e retorna um JWT.
+Resumo: autentica um usuário e retorna um JWT.
 
 Autenticação: pública
 
 Body:
+
+| Campo      | Tipo     | Obrigatório | Regra              |
+| ---------- | -------- | ----------- | ------------------ |
+| `email`    | `string` | sim         | email válido       |
+| `password` | `string` | sim         | não pode ser vazia |
+
+Exemplo de request:
 
 ```json
 {
@@ -128,13 +316,6 @@ Body:
   "password": "123456"
 }
 ```
-
-Regras:
-
-- `email` deve ser válido
-- `password` é obrigatória
-- o usuário precisa existir e estar ativo
-- email ou senha inválidos retornam `401`
 
 Resposta `200`:
 
@@ -147,6 +328,12 @@ Resposta `200`:
 }
 ```
 
+Regras:
+
+- o usuário deve existir
+- o usuário deve estar ativo
+- email e senha devem ser compatíveis
+
 Erros comuns:
 
 - `400`: payload inválido
@@ -154,7 +341,7 @@ Erros comuns:
 
 ### `POST /auth/logout`
 
-Retorna uma mensagem de logout lógico.
+Resumo: encerra a sessão lógica do usuário autenticado.
 
 Autenticação: obrigatória
 
@@ -170,17 +357,25 @@ Resposta `200`:
 
 Observação:
 
-- esta rota não faz blacklist de token; ela apenas retorna uma confirmação
+- não existe blacklist de token nesta rota
 
 ## Users
 
 ### `POST /users`
 
-Cria um novo usuário.
+Resumo: cria um novo usuário.
 
 Autenticação: pública
 
 Body:
+
+| Campo      | Tipo     | Obrigatório | Regra                    |
+| ---------- | -------- | ----------- | ------------------------ |
+| `name`     | `string` | sim         | entre 2 e 100 caracteres |
+| `email`    | `string` | sim         | email válido e único     |
+| `password` | `string` | sim         | mínimo de 6 caracteres   |
+
+Exemplo de request:
 
 ```json
 {
@@ -189,17 +384,6 @@ Body:
   "password": "123456"
 }
 ```
-
-Regras:
-
-- `name` é obrigatória
-- `name` deve ter entre 2 e 100 caracteres
-- `email` deve ser válido
-- `password` deve ter no mínimo 6 caracteres
-- `email` precisa ser único
-- novos usuários são criados com:
-  - `role = USER`
-  - `status = ACTIVE`
 
 Resposta `201`:
 
@@ -218,13 +402,13 @@ Erros comuns:
 
 ### `GET /users`
 
-Lista todos os usuários ativos com suas tarefas.
+Resumo: lista todos os usuários ativos com suas tarefas.
 
 Autenticação: obrigatória
 
 Permissão: `ADMIN`
 
-Query params: nenhum
+Query params: não possui
 
 Resposta `200`:
 
@@ -241,16 +425,16 @@ Resposta `200`:
 
 Erros comuns:
 
-- `401`: token ausente ou inválido
+- `401`: token ausente, inválido ou expirado
 - `403`: acesso administrativo necessário
 
 ### `GET /users/search`
 
-Busca usuários ativos por nome e/ou email.
+Resumo: busca usuários ativos por nome e/ou email.
 
 Autenticação: obrigatória
 
-Permissão: qualquer usuário autenticado
+Permissão: usuário autenticado
 
 Query params:
 
@@ -261,8 +445,8 @@ Query params:
 
 Regras:
 
-- é obrigatório enviar pelo menos `name` ou `email`
-- `email` deve ser válido quando informado
+- é obrigatório informar `name`, `email` ou ambos
+- `email` deve ser válido quando enviado
 
 Exemplo:
 
@@ -289,7 +473,7 @@ Erros comuns:
 
 ### `GET /users/me`
 
-Retorna o usuário autenticado com suas tarefas.
+Resumo: retorna o usuário autenticado com suas tarefas.
 
 Autenticação: obrigatória
 
@@ -313,22 +497,23 @@ Erros comuns:
 
 ### `PATCH /users/me`
 
-Atualiza o nome do usuário autenticado.
+Resumo: atualiza o nome do usuário autenticado.
 
 Autenticação: obrigatória
 
 Body:
+
+| Campo  | Tipo     | Obrigatório | Regra              |
+| ------ | -------- | ----------- | ------------------ |
+| `name` | `string` | sim         | não pode ser vazio |
+
+Exemplo de request:
 
 ```json
 {
   "name": "Johnny Doe"
 }
 ```
-
-Regras:
-
-- apenas o nome pode ser alterado
-- `name` é obrigatória
 
 Resposta `200`:
 
@@ -347,7 +532,7 @@ Erros comuns:
 
 ### `PATCH /users/:id/status`
 
-Reativa um usuário inativo.
+Resumo: reativa um usuário inativo.
 
 Autenticação: obrigatória
 
@@ -355,16 +540,11 @@ Permissão: `ADMIN`
 
 Path params:
 
-| Parâmetro | Tipo   | Descrição       |
-| --------- | ------ | --------------- |
-| `id`      | `uuid` | UUID do usuário |
+| Parâmetro | Tipo   | Obrigatório | Descrição       |
+| --------- | ------ | ----------- | --------------- |
+| `id`      | `uuid` | sim         | UUID do usuário |
 
 Body: não possui
-
-Regras:
-
-- se o usuário não existir, retorna `404`
-- se o usuário já estiver ativo, retorna `200` com mensagem informando isso
 
 Resposta `200`:
 
@@ -375,7 +555,7 @@ Resposta `200`:
 }
 ```
 
-Possível resposta alternativa `200`:
+Resposta alternativa `200`:
 
 ```json
 {
@@ -392,7 +572,7 @@ Erros comuns:
 
 ### `DELETE /users/:id`
 
-Desativa um usuário de forma lógica.
+Resumo: desativa um usuário de forma lógica.
 
 Autenticação: obrigatória
 
@@ -400,16 +580,15 @@ Permissão: `ADMIN`
 
 Path params:
 
-| Parâmetro | Tipo   | Descrição       |
-| --------- | ------ | --------------- |
-| `id`      | `uuid` | UUID do usuário |
+| Parâmetro | Tipo   | Obrigatório | Descrição       |
+| --------- | ------ | ----------- | --------------- |
+| `id`      | `uuid` | sim         | UUID do usuário |
 
 Body: não possui
 
-Regras:
+Efeito:
 
-- usuários já inativos retornam `404`
-- a exclusão é lógica, alterando `status` para `INACTIVE`
+- altera o status do usuário para `INACTIVE`
 
 Resposta `200`:
 
@@ -430,11 +609,21 @@ Erros comuns:
 
 ### `POST /tasks`
 
-Cria uma nova tarefa.
+Resumo: cria uma nova tarefa.
 
 Autenticação: obrigatória
 
 Body:
+
+| Campo              | Tipo       | Obrigatório | Regra                                         |
+| ------------------ | ---------- | ----------- | --------------------------------------------- |
+| `title`            | `string`   | sim         | não pode ser vazio                            |
+| `description`      | `string`   | não         | opcional                                      |
+| `tags`             | `string[]` | não         | default `[]`                                  |
+| `userEmail`        | `string`   | não         | somente `ADMIN` pode criar para outro usuário |
+| `responsibleEmail` | `string`   | não         | email do responsável                          |
+
+Exemplo de request:
 
 ```json
 {
@@ -446,25 +635,12 @@ Body:
 }
 ```
 
-Campos:
-
-| Campo              | Tipo       | Obrigatório | Observação                                    |
-| ------------------ | ---------- | ----------- | --------------------------------------------- |
-| `title`            | `string`   | sim         | não pode ser vazio                            |
-| `description`      | `string`   | não         | opcional                                      |
-| `tags`             | `string[]` | não         | default `[]`                                  |
-| `userEmail`        | `string`   | não         | somente `ADMIN` pode criar para outro usuário |
-| `responsibleEmail` | `string`   | não         | email do responsável pela tarefa              |
-
 Regras:
 
-- se `userEmail` não for enviado, a tarefa pertence ao usuário autenticado
-- se `userEmail` for igual ao email do usuário autenticado, a tarefa continua sendo dele
-- somente `ADMIN` pode criar tarefa para outro usuário
-- `responsibleEmail` pode apontar para:
-  - o dono da tarefa
-  - o usuário autenticado
-  - outro usuário ativo existente
+- sem `userEmail`, a tarefa pertence ao usuário autenticado
+- somente `ADMIN` pode criar para outro usuário
+- `responsibleEmail` é opcional
+- o dono e o responsável precisam existir e estar ativos
 
 Resposta `201`:
 
@@ -489,14 +665,14 @@ Erros comuns:
 
 ### `GET /tasks`
 
-Lista tarefas visíveis para o usuário autenticado.
+Resumo: lista tarefas visíveis para o usuário autenticado.
 
 Autenticação: obrigatória
 
 Visibilidade:
 
 - `ADMIN`: todas as tarefas ativas
-- `USER`: tarefas ativas próprias e tarefas ativas em que é responsável
+- `USER`: tarefas próprias e tarefas nas quais é responsável
 
 Query params:
 
@@ -505,7 +681,7 @@ Query params:
 | `title`         | `string` | não         | busca parcial por título                                           |
 | `status`        | `enum`   | não         | `PENDING`, `IN_PROGRESS`, `PAUSED`, `BLOCKED`, `DONE`, `CANCELLED` |
 | `tag`           | `string` | não         | filtra tarefas que contenham a tag                                 |
-| `responsibleId` | `uuid`   | não         | filtra por responsável                                             |
+| `responsibleId` | `uuid`   | não         | filtra pelo responsável                                            |
 
 Exemplo:
 
@@ -536,20 +712,20 @@ Erros comuns:
 
 ### `GET /tasks/:id`
 
-Busca uma tarefa ativa por UUID.
+Resumo: busca uma tarefa ativa por UUID.
 
 Autenticação: obrigatória
 
 Path params:
 
-| Parâmetro | Tipo   | Descrição      |
-| --------- | ------ | -------------- |
-| `id`      | `uuid` | UUID da tarefa |
+| Parâmetro | Tipo   | Obrigatório | Descrição      |
+| --------- | ------ | ----------- | -------------- |
+| `id`      | `uuid` | sim         | UUID da tarefa |
 
 Visibilidade:
 
 - `ADMIN`: qualquer tarefa ativa
-- `USER`: apenas tarefa própria ou tarefa em que é responsável
+- `USER`: somente tarefa própria ou tarefa em que é responsável
 
 Resposta `200`:
 
@@ -569,11 +745,11 @@ Resposta `200`:
 Erros comuns:
 
 - `400`: UUID inválido
-- `404`: tarefa não encontrada ou não visível
+- `404`: tarefa não encontrada ou fora do escopo de visibilidade
 
 ### `PATCH /tasks/:id`
 
-Atualiza dados da tarefa.
+Resumo: atualiza dados da tarefa.
 
 Autenticação: obrigatória
 
@@ -584,6 +760,15 @@ Permissão:
 
 Body:
 
+| Campo           | Tipo           | Obrigatório | Regra                          |
+| --------------- | -------------- | ----------- | ------------------------------ |
+| `title`         | `string`       | não         | se enviado, não pode ser vazio |
+| `description`   | `string`       | não         | string vazia vira `null`       |
+| `tags`          | `string[]`     | não         | substitui a lista atual        |
+| `responsibleId` | `uuid \| null` | não         | `null` remove o responsável    |
+
+Exemplo de request:
+
 ```json
 {
   "title": "Atualizar documentação da API",
@@ -593,21 +778,11 @@ Body:
 }
 ```
 
-Campos:
-
-| Campo           | Tipo           | Obrigatório | Regra                                 |
-| --------------- | -------------- | ----------- | ------------------------------------- |
-| `title`         | `string`       | não         | se enviado, não pode ser vazio        |
-| `description`   | `string`       | não         | string vazia é convertida para `null` |
-| `tags`          | `string[]`     | não         | substitui a lista atual               |
-| `responsibleId` | `uuid \| null` | não         | `null` remove o responsável           |
-
 Regras:
 
-- é obrigatório enviar pelo menos um campo
-- somente `ADMIN` ou dono da tarefa podem editar
-- `responsibleId` deve apontar para um usuário ativo existente quando não for `null`
-- a rota altera apenas dados da tarefa; não altera status
+- pelo menos um campo deve ser enviado
+- essa rota não altera o status da tarefa
+- `responsibleId` deve apontar para usuário ativo existente, salvo quando for `null`
 
 Resposta `200`:
 
@@ -626,13 +801,13 @@ Resposta `200`:
 
 Erros comuns:
 
-- `400`: UUID inválido ou nenhum campo enviado
+- `400`: UUID inválido, payload inválido ou nenhum campo enviado
 - `403`: `Você não tem permissão para atualizar esta tarefa`
 - `404`: tarefa não encontrada ou responsável não encontrado
 
 ### `PATCH /tasks/:id/status`
 
-Atualiza o status da tarefa.
+Resumo: atualiza o status da tarefa.
 
 Autenticação: obrigatória
 
@@ -644,20 +819,17 @@ Permissão:
 
 Body:
 
+| Campo    | Tipo   | Obrigatório | Regra                                 |
+| -------- | ------ | ----------- | ------------------------------------- |
+| `status` | `enum` | sim         | deve respeitar a tabela de transições |
+
+Exemplo de request:
+
 ```json
 {
   "status": "IN_PROGRESS"
 }
 ```
-
-Regras:
-
-- o status precisa respeitar a tabela de transições
-- ao mudar para `IN_PROGRESS`, `startedAt` é preenchido se ainda não existir
-- ao mudar para `DONE`:
-  - `completedAt` é preenchido
-  - `completionTime` é calculado em segundos, se `startedAt` existir
-- tarefas inativas não podem ser atualizadas
 
 Resposta `200`:
 
@@ -682,20 +854,20 @@ Erros comuns:
 
 ### `DELETE /tasks/:id`
 
-Remove uma tarefa.
+Resumo: remove uma tarefa.
 
 Autenticação: obrigatória
 
 Comportamento por perfil:
 
 - `ADMIN`: exclusão física
-- usuário comum: exclusão lógica (`isActive = false`)
+- usuário comum: exclusão lógica
 
 Path params:
 
-| Parâmetro | Tipo   | Descrição      |
-| --------- | ------ | -------------- |
-| `id`      | `uuid` | UUID da tarefa |
+| Parâmetro | Tipo   | Obrigatório | Descrição      |
+| --------- | ------ | ----------- | -------------- |
+| `id`      | `uuid` | sim         | UUID da tarefa |
 
 Regras:
 
@@ -714,11 +886,11 @@ Resposta `200`:
 
 Erros comuns:
 
-- `400`: UUID inválido ou tarefa concluída
+- `400`: UUID inválido ou tentativa de remover tarefa concluída
 - `403`: `Você não tem permissão para deletar esta tarefa`
 - `404`: tarefa não encontrada
 
-## Resumo de permissões
+## Matriz rápida de permissões
 
 | Rota                      | Público | Usuário autenticado   | Admin |
 | ------------------------- | ------- | --------------------- | ----- |
@@ -738,7 +910,7 @@ Erros comuns:
 | `PATCH /tasks/:id/status` | não     | dono ou responsável   | sim   |
 | `DELETE /tasks/:id`       | não     | somente dono          | sim   |
 
-## Exemplos de uso com cURL
+## Exemplos cURL
 
 ### Criar usuário
 
@@ -776,6 +948,20 @@ curl -X POST http://localhost:3333/api/v1/tasks \
   }'
 ```
 
+### Atualizar dados da tarefa
+
+```bash
+curl -X PATCH http://localhost:3333/api/v1/tasks/8f0506ab-70d3-4aab-bec9-6bd22fba8a70 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer SEU_TOKEN" \
+  -d '{
+    "title": "Atualizar documentação da API",
+    "description": "",
+    "tags": ["api", "backend"],
+    "responsibleId": null
+  }'
+```
+
 ### Atualizar status da tarefa
 
 ```bash
@@ -787,8 +973,8 @@ curl -X PATCH http://localhost:3333/api/v1/tasks/8f0506ab-70d3-4aab-bec9-6bd22fb
   }'
 ```
 
-## Observações finais
+## Observações Finais
 
-- o Swagger já expõe a documentação interativa da API
-- esta documentação textual foi escrita com base nos controllers, DTOs, schemas e regras implementadas no código
-- se um endpoint mudar no código, o `DOC.md` deve ser atualizado junto
+- a versão interativa oficial continua disponível no Swagger
+- este arquivo foi escrito com base nos controllers, DTOs, schemas e regras implementadas no código
+- quando um contrato mudar no código, o `DOC.md` deve ser atualizado junto
