@@ -1,7 +1,7 @@
 export const swaggerExamples = {
   auth: {
     email: 'john@example.com',
-    password: '123456',
+    password: 'Senha@123',
     accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
     logoutMessage: 'Logout realizado com sucesso',
   },

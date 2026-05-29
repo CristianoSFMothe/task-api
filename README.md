@@ -159,5 +159,6 @@ npm run test:cov
 
 - A API usa `ValidationPipe` global com `whitelist: true` e `forbidNonWhitelisted: true`
 - Campos extras enviados no body são rejeitados
+- A senha deve ter de 6 a 20 caracteres e conter ao menos uma letra minúscula, uma maiúscula, um número e um caractere especial
 - O prefixo global da API é `api/v1`
 - O Swagger mantém o token salvo na interface com `persistAuthorization: true`
