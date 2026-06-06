@@ -5,6 +5,7 @@
 - [Visão Geral](#visão-geral)
 - [URLs e Ambientes](#urls-e-ambientes)
 - [Variáveis de Ambiente](#variáveis-de-ambiente)
+- [Seed de Administrador](#seed-de-administrador)
 - [CORS](#cors)
 - [Convenções da API](#convenções-da-api)
 - [Autenticação](#autenticação)
@@ -65,6 +66,11 @@ A aplicação lê a configuração de um arquivo `.env` na raiz do projeto.
 | `JWT_EXPIRES_IN` | não         | `1d`          | Tempo de expiração do token (ex.: `1d`, `12h`, `30m`)|
 | `NODE_ENV`       | sim         | —             | `development`, `production` ou `test`                |
 | `PORT`           | não         | `3333`        | Porta HTTP do servidor                               |
+| `ADMIN_NAME`     | sim         | —             | Nome do usuário admin criado pelo seed               |
+| `ADMIN_EMAIL`    | sim         | —             | Email do usuário admin criado pelo seed              |
+| `ADMIN_PASSWORD` | sim         | —             | Senha (em texto puro) do usuário admin do seed       |
+
+> As variáveis `ADMIN_*` são lidas com `getOrThrow`: se qualquer uma estiver ausente, a aplicação falha no boot. Veja [Seed de Administrador](#seed-de-administrador).
 
 Exemplo de `.env`:
 
@@ -74,7 +80,24 @@ JWT_SECRET=uma-chave-segura
 JWT_EXPIRES_IN=1d
 NODE_ENV=development
 PORT=3333
+ADMIN_NAME=admin
+ADMIN_EMAIL=admin@admin.com
+ADMIN_PASSWORD=Abc@123
 ```
+
+## Seed de Administrador
+
+A aplicação executa um seed automático no startup (`OnApplicationBootstrap`), implementado em `src/database/seed/seed.service.ts`.
+
+A cada inicialização, o seed garante um usuário administrador com os valores definidos nas variáveis `ADMIN_*`:
+
+1. Procura um usuário pelo `ADMIN_EMAIL`.
+2. Se existir, **remove** (exclusão física) o registro encontrado.
+3. Em seguida, **cadastra** o admin com `ADMIN_NAME`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`, com a senha protegida por hash `bcrypt` (10 rounds) e `role` igual a `ADMIN`.
+
+Ou seja, a cada boot o admin é recriado do zero, sempre com os valores atuais do `.env`.
+
+> A senha é armazenada apenas como hash `bcrypt`; o valor em texto puro existe somente na variável `ADMIN_PASSWORD`. Em produção, use uma senha forte e mantenha o `.env` fora do versionamento.
 
 ## CORS
 
