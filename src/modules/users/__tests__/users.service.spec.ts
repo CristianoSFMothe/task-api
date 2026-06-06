@@ -98,6 +98,8 @@ type MockDb = {
   };
   insert: jest.Mock;
   update: jest.Mock;
+  delete: jest.Mock;
+  transaction: jest.Mock;
 };
 
 describe('UsersService', () => {
@@ -108,6 +110,7 @@ describe('UsersService', () => {
   let updateSetMock: jest.Mock;
   let updateWhereMock: jest.Mock;
   let updateReturningMock: jest.Mock;
+  let deleteWhereMock: jest.Mock;
 
   beforeEach(async () => {
     insertReturningMock = jest.fn();
@@ -122,6 +125,8 @@ describe('UsersService', () => {
     updateSetMock = jest.fn(() => ({
       where: updateWhereMock,
     }));
+
+    deleteWhereMock = jest.fn();
 
     db = {
       query: {
@@ -139,6 +144,12 @@ describe('UsersService', () => {
       update: jest.fn(() => ({
         set: updateSetMock,
       })),
+      delete: jest.fn(() => ({
+        where: deleteWhereMock,
+      })),
+      transaction: jest.fn((callback: (tx: MockDb) => unknown) =>
+        callback(db),
+      ),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -575,6 +586,36 @@ describe('UsersService', () => {
     await expect(service.delete(mockUser.id)).rejects.toMatchObject({
       message: messages.user.notFound,
     });
+  });
+
+  it('should hard delete user and their tasks when requester is ADMIN', async () => {
+    db.query.users.findFirst.mockResolvedValue({ id: mockUser.id });
+
+    await expect(service.delete(mockUser.id, 'ADMIN')).resolves.toEqual(
+      mockDeletedUserResponse,
+    );
+
+    expect(db.transaction).toHaveBeenCalledTimes(1);
+    // Exclui as tarefas do dono e, em seguida, o próprio usuário.
+    expect(deleteWhereMock).toHaveBeenCalledTimes(2);
+    // Libera o usuário como responsável das tarefas restantes.
+    expect(updateSetMock).toHaveBeenCalledWith(
+      expect.objectContaining({ responsibleId: null }),
+    );
+    // Não aplica soft delete (status INACTIVE).
+    expect(updateReturningMock).not.toHaveBeenCalled();
+  });
+
+  it('should reject hard delete when user does not exist', async () => {
+    db.query.users.findFirst.mockResolvedValue(undefined);
+
+    await expect(
+      service.delete(mockMissingUserId, 'ADMIN'),
+    ).rejects.toMatchObject({
+      message: messages.user.notFound,
+    });
+
+    expect(db.transaction).not.toHaveBeenCalled();
   });
 
   it('should return already active response on updateStatus for active user', async () => {

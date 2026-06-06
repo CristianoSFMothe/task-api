@@ -295,7 +295,7 @@ Todas as mensagens retornadas pela API são centralizadas no código. Abaixo, o 
 | ---------------------------------------------- | ------ | ---------------------------------------- |
 | `Usuário não encontrado`                       | `404`  | usuário inexistente ou inativo           |
 | `Email já cadastrado`                          | `409`  | e-mail duplicado na criação              |
-| `Usuário deletado com sucesso`                 | `200`  | desativação lógica concluída             |
+| `Usuário deletado com sucesso`                 | `200`  | exclusão concluída (física por `ADMIN` ou lógica) |
 | `Usuário já está ativo`                        | `200`  | reativação de usuário já ativo           |
 | `Status do usuário atualizado com sucesso`     | `200`  | reativação concluída                     |
 
@@ -823,7 +823,7 @@ Erros comuns:
 
 ### `DELETE /users/:id`
 
-Resumo: desativa um usuário de forma lógica.
+Resumo: remove um usuário.
 
 Autenticação: obrigatória
 
@@ -837,9 +837,15 @@ Path params:
 
 Body: não possui
 
-Efeito:
+Efeito (depende do perfil de quem executa):
 
-- altera o status do usuário para `INACTIVE`
+- **`ADMIN`**: exclusão **física** dentro de uma transação:
+  - remove as tarefas criadas pelo usuário (onde ele é o dono);
+  - libera o usuário como responsável nas tarefas de outros usuários (`responsibleId` vira `null`), evitando violação de foreign key;
+  - remove o registro do usuário do banco.
+- **demais perfis**: exclusão **lógica** (altera o `status` do usuário para `INACTIVE`).
+
+> A rota é restrita a `ADMIN` pelo guard de perfis, portanto, na prática, a exclusão é sempre física. A exclusão lógica permanece como fallback caso a regra de acesso seja flexibilizada no futuro.
 
 Resposta `200`:
 

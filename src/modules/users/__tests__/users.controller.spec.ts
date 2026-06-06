@@ -130,10 +130,11 @@ describe('UsersController', () => {
     usersService.delete.mockResolvedValue(mockDeletedUserResponse);
 
     await expect(
-      controller.delete(mockDeletedUserResponse.id),
+      controller.delete(mockDeletedUserResponse.id, mockAuthenticatedRequest),
     ).resolves.toEqual(mockDeletedUserResponse);
     expect(usersService.delete).toHaveBeenCalledWith(
       mockDeletedUserResponse.id,
+      mockAuthenticatedRequest.user.role,
     );
   });
 

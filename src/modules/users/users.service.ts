@@ -288,7 +288,15 @@ export class UsersService {
     return updatedUser;
   }
 
-  async delete(id: string): Promise<DeleteUserResponse> {
+  async delete(id: string, role?: UserRole): Promise<DeleteUserResponse> {
+    if (role === 'ADMIN') {
+      return this.hardDelete(id);
+    }
+
+    return this.softDelete(id);
+  }
+
+  private async softDelete(id: string): Promise<DeleteUserResponse> {
     const user = await this.findUserByIdWithStatus(id);
 
     if (!user || user.status === 'INACTIVE') {
@@ -314,6 +322,37 @@ export class UsersService {
 
     return {
       id: deletedUser.id,
+      message: messages.user.deletedSuccessfully,
+    };
+  }
+
+  private async hardDelete(id: string): Promise<DeleteUserResponse> {
+    const user = await this.db.query.users.findFirst({
+      columns: { id: true },
+      where: eq(users.id, id),
+    });
+
+    if (!user) {
+      throw new NotFoundException(messages.user.notFound);
+    }
+
+    await this.db.transaction(async (tx) => {
+      // Remove as tarefas criadas pelo usuário (dono).
+      await tx.delete(tasks).where(eq(tasks.userId, id));
+
+      // Libera o usuário como responsável em tarefas de outros usuários,
+      // evitando violação da foreign key ao excluí-lo.
+      await tx
+        .update(tasks)
+        .set({ responsibleId: null, updatedAt: new Date() })
+        .where(eq(tasks.responsibleId, id));
+
+      // Exclusão física do usuário.
+      await tx.delete(users).where(eq(users.id, id));
+    });
+
+    return {
+      id: user.id,
       message: messages.user.deletedSuccessfully,
     };
   }

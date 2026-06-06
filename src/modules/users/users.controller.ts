@@ -139,8 +139,11 @@ export class UsersController {
   @ApiAdminAccess()
   @ApiNotFound()
   @ApiServerErrorResponse()
-  delete(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.usersService.delete(id);
+  delete(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() request: RequestWithUser,
+  ) {
+    return this.usersService.delete(id, request.user.role);
   }
 
   @Public()
