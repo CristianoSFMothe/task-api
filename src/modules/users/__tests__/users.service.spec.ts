@@ -147,9 +147,7 @@ describe('UsersService', () => {
       delete: jest.fn(() => ({
         where: deleteWhereMock,
       })),
-      transaction: jest.fn((callback: (tx: MockDb) => unknown) =>
-        callback(db),
-      ),
+      transaction: jest.fn((callback: (tx: MockDb) => unknown) => callback(db)),
     };
 
     const module: TestingModule = await Test.createTestingModule({
